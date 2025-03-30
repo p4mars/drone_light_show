@@ -22,7 +22,7 @@ Before cloning the repository, please make sure you have the following installed
 
 Make sure you also have the following dependencies set up so you can work with development containers:
 - vscode, setup for [dev containers](https://code.visualstudio.com/docs/devcontainers/containers)
--[docker engine](https://docs.docker.com/engine/install/ubuntu/)
+- [docker engine](https://docs.docker.com/engine/install/ubuntu/)
 
 ### Cloning the repository 
 
