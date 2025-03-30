@@ -31,7 +31,7 @@ Once you have the prerequisites set up, it is time to clone the repository.
 
 ```powershell
 cd <your-directory>
-mkdir "File_name"
+mkdir "Folder_name"
 ```
 3. Clone the repository 
 ```bash
