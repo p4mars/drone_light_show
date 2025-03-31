@@ -93,7 +93,7 @@ The Micro XCRE-DDS agent terminal will show the equivalent topics that are creat
 ```
 3. Source the ROS 2 development environment into the current terminal and compile the workspace using colcon:
 ```
-   cd ..
+  cd ..
   source /opt/ros/humble/setup.bash
   colcon build
 ```
