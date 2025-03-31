@@ -83,8 +83,11 @@ The Micro XCRE-DDS agent terminal will show the equivalent topics that are creat
 ## ROS2 Workspace 
 
 1. Open a new terminal
-2. Clone the example and PX4 message directory in the ros2_ws/src directory (created by the dev environment). This will provide the ROS 2 message definitions for the PX4 Autopilot project. Building this package generates all the required interfaces to interface ROS 2 nodes with the PX4 internals.More information can be found [here](https://docs.px4.io/main/en/middleware/uxrce_dds.html#supported-uorb-messages).
+2. Create the src directory in the ROS2 workspace repo (created by the dev environment). Clone the example and PX4 message directory in this directory. This will provide the ROS 2 message definitions for the PX4 Autopilot project. Building this package generates all the required interfaces to interface ROS 2 nodes with the PX4 internals.More information can be found [here](https://docs.px4.io/main/en/middleware/uxrce_dds.html#supported-uorb-messages).
 ```
+  cd ros2_ws
+  mkdir src
+  cd src
   git clone https://github.com/PX4/px4_msgs.git
   git clone https://github.com/PX4/px4_ros_com.git
 ```
