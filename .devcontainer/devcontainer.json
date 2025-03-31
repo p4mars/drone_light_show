@@ -1,75 +1,78 @@
 {
-    "name": "ROS 2 Workspace humble-ros-base",
-    "remoteUser": "ros",
-    "build": {
-      "dockerfile": "Dockerfile",
-      "args": {
-        "USERNAME": "ros",
-        "GID": "1000",
-        "UID": "1000"
-      }
-    },
-    "workspaceFolder": "/home/ros/ros2_ws",  // Default folder for your ROS workspace
-    "workspaceMount": "source=${localWorkspaceFolder},target=/home/ros/ros2_ws/,type=bind",  // If you add files later, this will bind them
-    "features": {
-      "ghcr.io/rocker-org/devcontainer-features/apt-packages:1": {
-        "packages": "nano,python3-venv,wget,btop"
-      }
-    },
-    "mounts": [
-      "type=bind,source=${localEnv:HOME}/.ssh,target=/home/ros/.ssh,readonly"
-    ],
-    "runArgs": [
-      "--memory=16g",
-      "--cap-add=SYS_PTRACE",
-      "--security-opt=seccomp:unconfined",
-      "--security-opt=apparmor:unconfined",
-      "--volume=/tmp/.X11-unix:/tmp/.X11-unix",
-      "--volume=${localEnv:HOME}/.Xauthority:/home/ros/.Xauthority:rw",
-      "--device=/dev/snd:/dev/snd",
-      "--group-add=audio",
-      //"--gpus=all",
-      "--device=/dev/dri",
-      "--privileged",
-      "--net=host"
-    ],
-    "containerEnv": {
-      "DISPLAY": "${localEnv:DISPLAY}",
-      "DEV_WORKSPACE": "${containerWorkspaceFolder}",
-      "GZ_SIM_RESOURCE_PATH": "${containerWorkspaceFolder}/install/share",
-      "IGN_GAZEBO_RESOURCE_PATH": "${containerWorkspaceFolder}/install/share/simulation/worlds:${containerWorkspaceFolder}/install/share/simulation/models",
-      "GZ_VERSION": "fortress",
-      "ROS_DOMAIN_ID": "42"
-    },
-    "customizations": {
-      "vscode": {
-        "extensions": [
-          "ms-python.python",
-          "charliermarsh.ruff",
-          "ms-vscode.cpptools-extension-pack",
-          "ms-iot.vscode-ros",
-          "smilerobotics.urdf",
-          "redhat.vscode-xml",
-          "tamasfe.even-better-toml",
-          "timonwong.shellcheck",
-          "yzhang.markdown-all-in-one"
-        ],
-        "settings": {
-          "terminal.integrated.profiles.linux": {
-            "bash": {
-              "path": "bash",
-              "icon": "terminal-bash"
-            }
-          },
-          "terminal.integrated.defaultProfile.linux": "bash",
-          "files.associations": {
-            "*.rviz": "yaml",
-            "*.srdf": "xml",
-            "*.urdf": "xml",
-            "*.xacro": "xml"
+  "name": "PX4-ROS2-Gazebo",
+  "remoteUser": "ros",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "args": {
+      "USERNAME": "ros",
+      "GID": "1000",
+      "UID": "1000"
+    }
+  },
+  "workspaceFolder": "/home/ros/ros2_ws",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/home/ros/ros2_ws/,type=bind",
+  "features": {
+    "ghcr.io/rocker-org/devcontainer-features/apt-packages:1": {
+      "packages": "nano,python3-venv,wget,btop"
+    }
+  },
+  "mounts": [
+    "type=bind,source=${localEnv:HOME}/.ssh,target=/home/ros/.ssh,readonly"
+  ],
+  "runArgs": [
+    "--memory=30g",
+    "--cap-add=SYS_PTRACE",
+    "--security-opt=seccomp:unconfined",
+    "--security-opt=apparmor:unconfined",
+    "--volume=/tmp/.X11-unix:/tmp/.X11-unix",
+    "--volume=${localEnv:HOME}/.Xauthority:/home/ros/.Xauthority:rw",
+    "--device=/dev/snd:/dev/snd",
+    "--group-add=audio",
+    "--device=/dev/dri",
+    "--privileged",
+    "--net=host"
+  ],
+  "containerEnv": {
+    "DISPLAY": "${localEnv:DISPLAY}",
+    "DEV_WORKSPACE": "${containerWorkspaceFolder}",
+    "GZ_SIM_RESOURCE_PATH": "${containerWorkspaceFolder}/install/share",
+    "IGN_GAZEBO_RESOURCE_PATH": "${containerWorkspaceFolder}/install/share/simulation/worlds:${containerWorkspaceFolder}/install/share/simulation/models",
+    "GZ_VERSION": "fortress",
+    "ROS_DOMAIN_ID": "42"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "charliermarsh.ruff",
+        "ms-vscode.cpptools-extension-pack",
+        "ms-iot.vscode-ros",
+        "smilerobotics.urdf",
+        "redhat.vscode-xml",
+        "tamasfe.even-better-toml",
+        "timonwong.shellcheck",
+        "yzhang.markdown-all-in-one"
+      ],
+      "settings": {
+        "terminal.integrated.profiles.linux": {
+          "bash": {
+            "path": "bash",
+            "icon": "terminal-bash"
           }
+        },
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "files.associations": {
+          "*.rviz": "yaml",
+          "*.srdf": "xml",
+          "*.urdf": "xml",
+          "*.xacro": "xml"
         }
       }
     }
-  }
-  
+  },
+  "forwardPorts": [
+    14550,
+    11345,
+    6090
+  ]
+}

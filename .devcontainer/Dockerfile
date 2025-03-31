@@ -33,6 +33,7 @@ RUN sudo apt-get update && sudo apt-get upgrade -y \
     apt-rdepends \
     build-essential \
     git \
+    cmake \
     # install useful tools
     ccache \
     wget \
@@ -67,11 +68,23 @@ RUN sudo pip3 install --no-cache --upgrade numpy
 
 RUN rosdep update
 
+# Install Micro-XRCE-DDS-Agent
+WORKDIR /home/ros
+RUN git clone -b v2.4.2 https://github.com/eProsima/Fast-DDS.git \
+    && cd Fast-DDS \
+    && git clone https://github.com/eProsima/Micro-XRCE-DDS-Agent.git \
+    && cd Micro-XRCE-DDS-Agent \
+    && mkdir build && cd build \
+    && cmake .. \
+    && make -j$(nproc) \
+    && sudo make install \
+    && sudo ldconfig /usr/local/lib/
+
 ###########################################
 
-FROM dev as simulation
+FROM dev AS simulation
 
-# Install gazebo and corresponding ros packages.
+# Install Gazebo, ROS packages, and PX4-Gazebo-ROS2 Bridge
 RUN sudo wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg \
     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null \
     && sudo apt-get update \
@@ -80,12 +93,42 @@ RUN sudo wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrin
     ros-${ROS_DISTRO}-ign-ros2-control \
     ros-${ROS_DISTRO}-ros-gz \
     ros-${ROS_DISTRO}-ros-ign-bridge \
-    ros-${ROS_DISTRO}-ros-ign-gazebo \
+    ros-${ROS_DISTRO}-ros-ign-gazebo \ 
+    # PX4-Gazebo-ROS2 Bridge Added
     # apt clean-up
     && sudo apt-get autoremove -y \
     && sudo rm -rf /var/lib/apt/lists/*
 
+###########################################
+
+# Install PX4 Autopilot
+RUN sudo apt-get update && sudo apt-get install -y --no-install-recommends \
+    ninja-build \
+    exiftool \
+    python3-jinja2 \
+    python3-setuptools \
+    python3-pandas \
+    python3-numpy \
+    python3-matplotlib \
+    python3-scipy \
+    python3-opencv \
+    python3-empy \
+    python3-toml \
+    python3-click \
+    && pip3 install pyulog pyquaternion pyserial \
+    && sudo apt clean
+
+# Clone PX4 repository
+WORKDIR /home/ros
+RUN git clone --recursive https://github.com/PX4/PX4-Autopilot.git
+
+# Install PX4 dependencies
+WORKDIR /home/ros/PX4-Autopilot
+RUN bash ./Tools/setup/ubuntu.sh
+
+# Build PX4 SITL
+RUN make px4_sitl
+
 # Setup entrypoint
 ENTRYPOINT ["/ros_entrypoint.sh"]
 CMD ["bin/bash"]
-
