@@ -43,7 +43,55 @@ git clone https://github.com/p4mars/drone_light_show.git
 
 Once the container has been built, your workspace should now be successfully created and ready to use!
 
+## Establishing Communication between the Agent and the Client 
+PX4 is the autopilot firmware which acts as the flight control for the drone. This firmware includes many flight modes that help with the control of the drone such as holding attitude, acrobatic mode for drone racing but also autonomous modes such as return-to-launch and an offboard mode. This offboard mode will be used for this simulation. The [offboard mode](https://docs.px4.io/main/en/flight_modes/offboard.html) allows the companion computer on the drone to take over its operation autonomously by giving the controller control inputs. For us, this is the ROS2 framework that we develop. On the drone, there is a client which allows communication with our ROS2 network. The client communicates with [uORB](https://docs.px4.io/main/en/msg_docs/) topics in the PX4 firmware to turn the commands into code. Our ROS2 network communicates with this client through the agent. This communication link can be seen in the image below. The set up of the client and agent has already been done when building the development environment. 
+
+![image](https://github.com/user-attachments/assets/1a828b53-ca2c-4274-822d-ad8c367571f2)
 
 
+To establish this communication, the following should be taken:
 
+1. Start the agent
+```bash
+MicroXRCEAgent udp4 -p 8888
+```
+2. In a new terminal, start a PX4-Gazebo simulation with the drone in the PX4-Autopilot directory. A new pop-up with Gazebo and the X-500 should show.
+```bash
+cd PX4-Autopilot
+make px4-sitl gz_500
+```
+The agent and client are now running they should connect.
 
+3. The PX4 terminal should display:
+```
+   ...
+  INFO  [uxrce_dds_client] synchronized with time offset 1675929429203524us
+  INFO  [uxrce_dds_client] successfully created rt/fmu/out/failsafe_flags data writer, topic id: 83
+  INFO  [uxrce_dds_client] successfully created rt/fmu/out/sensor_combined data writer, topic id: 168
+  INFO  [uxrce_dds_client] successfully created rt/fmu/out/timesync_status data writer, topic id: 188
+...
+```
+The Micro XCRE-DDS agent terminal will show the equivalent topics that are created in the DDS network.
+```
+...
+  [1675929445.268957] info     | ProxyClient.cpp    | create_publisher         | publisher created      | client_key: 0x00000001,   publisher_id: 0x0DA(3), participant_id: 0x001(1)
+  [1675929445.269521] info     | ProxyClient.cpp    | create_datawriter        | datawriter created     | client_key: 0x00000001,   datawriter_id: 0x0DA(5), publisher_id: 0x0DA(3)
+  [1675929445.270412] info     | ProxyClient.cpp    | create_topic             | topic created          | client_key: 0x00000001, topic_id: 0x0DF(2), participant_id: 0x001(1)
+  ...
+```
+
+## ROS2 Workspace 
+
+1. Open a new terminal
+2. Clone the example and PX4 message directory in the ros2_ws/src directory (created by the dev environment). This will provide the ROS 2 message definitions for the PX4 Autopilot project. Building this package generates all the required interfaces to interface ROS 2 nodes with the PX4 internals.More information can be found [here](https://docs.px4.io/main/en/middleware/uxrce_dds.html#supported-uorb-messages).
+```
+  git clone https://github.com/PX4/px4_msgs.git
+  git clone https://github.com/PX4/px4_ros_com.git
+```
+3. Source the ROS 2 development environment into the current terminal and compile the workspace using colcon:
+```
+   cd ..
+  source /opt/ros/humble/setup.bash
+  colcon build
+```
+This builds all the folders under /src using the sourced toolchain. To run the example to ensure your set up was done correctly please refer to the [official PX4 documentation](https://docs.px4.io/main/en/ros2/user_guide.html#running-the-example).
