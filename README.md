@@ -1,7 +1,7 @@
 # Drone Light Show Set-up
-This README will show you how to do the following:
-- Set-up the environment so you have access to ROS2 and Gazebo along with creating your workspace. 
-- TBD!
+This README will show you how to set-up your environment so you have access to ROS2, Gazebo and PX4 along with creating your workspace.
+
+For more information about the development of this simulation, please refer to our wiki. 
 
 *Note: This set-up is for Windows!*
   
@@ -58,7 +58,7 @@ MicroXRCEAgent udp4 -p 8888
 2. In a new terminal, start a PX4-Gazebo simulation with the drone in the PX4-Autopilot directory. A new pop-up with Gazebo and the X-500 should show.
 ```bash
 cd PX4-Autopilot
-make px4-sitl gz_500
+make px4_sitl gz_500
 ```
 The agent and client are now running they should connect.
 
@@ -83,7 +83,7 @@ The Micro XCRE-DDS agent terminal will show the equivalent topics that are creat
 ## ROS2 Workspace 
 
 1. Open a new terminal
-2. Create the src directory in the ROS2 workspace repo (created by the dev environment). Clone the example and PX4 message directory in this directory. This will provide the ROS 2 message definitions for the PX4 Autopilot project. Building this package generates all the required interfaces to interface ROS 2 nodes with the PX4 internals.More information can be found [here](https://docs.px4.io/main/en/middleware/uxrce_dds.html#supported-uorb-messages).
+2. Create the src directory in the ROS2 workspace repo (created by the dev environment). Clone the example and PX4 message directory in this directory. This will provide the ROS 2 message definitions for the PX4 Autopilot project. Building this package generates all the required interfaces to interface ROS 2 nodes with the PX4 internals. More information can be found [here](https://docs.px4.io/main/en/middleware/uxrce_dds.html#supported-uorb-messages). Please keep in mind that this download may take 20-30 minutes. 
 ```
   cd ros2_ws
   mkdir src
@@ -97,4 +97,6 @@ The Micro XCRE-DDS agent terminal will show the equivalent topics that are creat
   source /opt/ros/humble/setup.bash
   colcon build
 ```
-This builds all the folders under /src using the sourced toolchain. To run the example to ensure your set up was done correctly please refer to the [official PX4 documentation](https://docs.px4.io/main/en/ros2/user_guide.html#running-the-example).
+This builds all the folders under /src using the sourced toolchain. To run the example to ensure your set up was done correctly please refer to the [official PX4 documentation](https://docs.px4.io/main/en/ros2/user_guide.html#running-the-example). 
+
+For more information about our development and how to run our simulation, please refer to our wiki. 
