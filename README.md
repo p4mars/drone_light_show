@@ -83,7 +83,7 @@ The Micro XCRE-DDS agent terminal will show the equivalent topics that are creat
 ## ROS2 Workspace 
 
 1. Open a new terminal
-2. Create the src directory in the ROS2 workspace repo (created by the dev environment). Clone the example and PX4 message directory in this directory. This will provide the ROS 2 message definitions for the PX4 Autopilot project. Building this package generates all the required interfaces to interface ROS 2 nodes with the PX4 internals. More information can be found [here](https://docs.px4.io/main/en/middleware/uxrce_dds.html#supported-uorb-messages). Please keep in mind that this download may take 20-30 minutes. 
+2. Create the src directory in the ROS2 workspace repo (created by the dev environment). Clone the example and PX4 message directory in this directory. This will provide the ROS 2 message definitions for the PX4 Autopilot project. Building this package generates all the required interfaces to interface ROS 2 nodes with the PX4 internals. More information can be found [here](https://docs.px4.io/main/en/middleware/uxrce_dds.html#supported-uorb-messages). 
 ```
   cd ros2_ws
   mkdir src
@@ -91,7 +91,7 @@ The Micro XCRE-DDS agent terminal will show the equivalent topics that are creat
   git clone https://github.com/PX4/px4_msgs.git
   git clone https://github.com/PX4/px4_ros_com.git
 ```
-3. Source the ROS 2 development environment into the current terminal and compile the workspace using colcon:
+3. Source the ROS 2 development environment into the current terminal and compile the workspace using colcon. Please keep in mind that this may take up to 20 minutes or more. 
 ```
   cd ..
   source /opt/ros/humble/setup.bash
@@ -99,4 +99,4 @@ The Micro XCRE-DDS agent terminal will show the equivalent topics that are creat
 ```
 This builds all the folders under /src using the sourced toolchain. To run the example to ensure your set up was done correctly please refer to the [official PX4 documentation](https://docs.px4.io/main/en/ros2/user_guide.html#running-the-example). 
 
-For more information about our development and how to run our simulation, please refer to our wiki. 
+For more information about our development and how to run our simulation, please refer to our [wiki](https://github.com/p4mars/drone_light_show/wiki).
