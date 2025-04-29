@@ -49,6 +49,7 @@ RUN sudo apt-get update && sudo apt-get upgrade -y \
     python3-pip \
     python3-rosdep \
     python3-vcstool \
+
     # apt clean-up
     && sudo apt-get autoremove -y \
     && sudo rm -rf /var/lib/apt/lists/*
@@ -94,6 +95,9 @@ RUN sudo wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrin
     ros-${ROS_DISTRO}-ros-gz \
     ros-${ROS_DISTRO}-ros-ign-bridge \
     ros-${ROS_DISTRO}-ros-ign-gazebo \ 
+    ros-${ROS_DISTRO}-rclpy \
+    ros-${ROS_DISTRO}-std-msgs \
+    ros-${ROS_DISTRO}-px4-msgs \
     # PX4-Gazebo-ROS2 Bridge Added
     # apt clean-up
     && sudo apt-get autoremove -y \
