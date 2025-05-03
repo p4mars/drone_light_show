@@ -81,13 +81,14 @@ The Micro XCRE-DDS agent terminal will show the equivalent topics that are creat
 ```
 4. Once the terminal displays the following:
 ```
-pxh>
+INFO  [px4] Startup script returned successfully
+pxh> ...
 ```
-Input the command (on the same line as pxh>):
+Press enter and input the command (with "pxh>" already provided by the terminal):
 ```
-param import working-params
+pxh> param import working.params
 ```
-After which, the terminal should eventually display:
+After which, the terminal will display some messages, ending with:
 ```
 pxh> INFO  [commander] Ready for takeoff!
 ```
