@@ -79,6 +79,18 @@ The Micro XCRE-DDS agent terminal will show the equivalent topics that are creat
   [1675929445.270412] info     | ProxyClient.cpp    | create_topic             | topic created          | client_key: 0x00000001, topic_id: 0x0DF(2), participant_id: 0x001(1)
   ...
 ```
+4. Once the terminal displays the following:
+```
+pxh>
+```
+Input the command:
+```
+param import working-params
+```
+After which, the terminal should eventually display:
+```
+pxh> INFO  [commander] Ready for takeoff!
+```
 
 ## ROS2 Workspace 
 
