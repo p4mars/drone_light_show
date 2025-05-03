@@ -102,7 +102,7 @@ The Micro XCRE-DDS agent terminal will show the equivalent topics that are creat
 colcon build --packages-select <NAME_OF_FILE>
 ```
 
-4. Resource your directory by typing:
+4. Resource your directory for the changes to take effect by typing:
 ```
 source ros2_ws/install/setup.bash
 ```
