@@ -49,7 +49,6 @@ RUN sudo apt-get update && sudo apt-get upgrade -y \
     python3-pip \
     python3-rosdep \
     python3-vcstool \
-
     # apt clean-up
     && sudo apt-get autoremove -y \
     && sudo rm -rf /var/lib/apt/lists/*
@@ -85,7 +84,7 @@ RUN git clone -b v2.4.2 https://github.com/eProsima/Fast-DDS.git \
 
 FROM dev AS simulation
 
-# Install Gazebo, ROS packages, and PX4-Gazebo-ROS2 Bridge
+# Install Gazebo, ROS packages
 RUN sudo wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg \
     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null \
     && sudo apt-get update \
@@ -97,8 +96,8 @@ RUN sudo wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrin
     ros-${ROS_DISTRO}-ros-ign-gazebo \ 
     ros-${ROS_DISTRO}-rclpy \
     ros-${ROS_DISTRO}-std-msgs \
-    ros-${ROS_DISTRO}-px4-msgs \
-    # PX4-Gazebo-ROS2 Bridge Added
+    ros-${ROS_DISTRO}-launch \          
+    ros-${ROS_DISTRO}-launch-ros \      
     # apt clean-up
     && sudo apt-get autoremove -y \
     && sudo rm -rf /var/lib/apt/lists/*
@@ -119,6 +118,18 @@ RUN sudo apt-get update && sudo apt-get install -y --no-install-recommends \
     python3-empy \
     python3-toml \
     python3-click \
+    libeigen3-dev \
+    libxml2-dev \
+    libcurl4-openssl-dev \
+    libgtest-dev \
+    libsdl2-dev \
+    protobuf-compiler \
+    libopencv-dev \
+    libusb-1.0-0-dev \
+    libtool \
+    pkg-config \
+    libpython3-dev \
+    wget \
     && pip3 install pyulog pyquaternion pyserial \
     && sudo apt clean
 
@@ -135,4 +146,4 @@ RUN make px4_sitl
 
 # Setup entrypoint
 ENTRYPOINT ["/ros_entrypoint.sh"]
-CMD ["bin/bash"]
+CMD ["/bin/bash"]

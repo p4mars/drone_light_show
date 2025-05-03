@@ -3,7 +3,8 @@ build/
 install/
 log/
 
-# Ignore external repos (you cloned these, don't push them)
+# Ignore external repos (
+you cloned these, don't push them)
 src/px4_msgs/
 src/px4_ros_com/
 

@@ -39,7 +39,7 @@ mkdir <folder_name>
 ```bash
 git clone https://github.com/p4mars/drone_light_show.git
 ```
-4. Once it has been cloned, press F1 and type into the search bar "Dev Container: Rebuild and Reopen in Container" and click on it. A box on the bottom right hand corner should display "Connecting to Dev Container (show log)". Click on the 'show log' to view the logs while it is building.
+4. Once it has been cloned, open the folder you cloned the repo into by pressing 'Open Folder' on the left side of the screen. Once opened, press F1 and type into the search bar "Dev Container: Rebuild and Reopen in Container" and click on it. A box on the bottom right hand corner should display "Connecting to Dev Container (show log)". You can click on the 'show log' to view the logs while it is building.
 
 Once the container has been built, your workspace should now be successfully created and ready to use!
 
