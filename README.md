@@ -97,6 +97,38 @@ The Micro XCRE-DDS agent terminal will show the equivalent topics that are creat
   source /opt/ros/humble/setup.bash
   colcon build
 ```
+3.b. If you have already built the package using colcon build and need to implement changes to a file, rebuild the changed file by doing:
+```
+colcon build --packages-select <NAME_OF_FILE>
+```
+
+4. Resource your directory by typing:
+```
+source ros2_ws/install/setup.bash
+```
+
+and use:
+```
+ros2 launch offboard_control_pkg offboard_control_launch_file.launch.py
+```
+If everything went well, the following messages are displayed to indicate that the offboard control node commands are being sent:
+```
+[INFO] [launch]: All log files can be found below /home/ros/.ros/log/2025-05-03-18-16-09-702212-docker-desktop-67175
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [offboard_control_node-1]: process started with pid [67200]
+[offboard_control_node-1] [INFO] [1746296183.432164077] [control]: Offboard control node initialised!
+[offboard_control_node-1] [INFO] [1746296183.518250685] [control]: Offboard command sent!
+[offboard_control_node-1] [INFO] [1746296183.565683388] [control]: Attempting to switch to offboard mode
+[offboard_control_node-1] [INFO] [1746296183.633661930] [control]: Offboard command sent!
+[offboard_control_node-1] [INFO] [1746296183.676008391] [control]: Attempting to switch to offboard mode
+[offboard_control_node-1] [INFO] [1746296183.710937433] [control]: Offboard command sent!
+[offboard_control_node-1] [INFO] [1746296183.746012526] [control]: Attempting to switch to offboard mode
+[offboard_control_node-1] [INFO] [1746296183.824284873] [control]: Offboard command sent!
+[offboard_control_node-1] [INFO] [1746296183.869348938] [control]: Attempting to switch to offboard mode
+[offboard_control_node-1] [INFO] [1746296183.909533498] [control]: Offboard command sent!
+...
+```
+
 This builds all the folders under /src using the sourced toolchain. To run the example to ensure your set up was done correctly please refer to the [official PX4 documentation](https://docs.px4.io/main/en/ros2/user_guide.html#running-the-example). 
 
 For more information about our development and how to run our simulation, please refer to our [wiki](https://github.com/p4mars/drone_light_show/wiki).
