@@ -107,7 +107,7 @@ colcon build --packages-select <NAME_OF_FILE>
 source ros2_ws/install/setup.bash
 ```
 
-and use:
+and use the following command to launch the offboard control file:
 ```
 ros2 launch offboard_control_pkg offboard_control_launch_file.launch.py
 ```
