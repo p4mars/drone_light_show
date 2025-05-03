@@ -9,11 +9,5 @@ def generate_launch_description():
             package='offboard_control_pkg',
             executable='offboard_control_node',
             name='control',
-            output='screen',
-                        parameters=[{
-                'altitude': 2.0,
-                'radius': 3.0,
-                'omega': 0.1
-            }]
-        ),
+            output='screen'),
     ])
