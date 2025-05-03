@@ -83,7 +83,7 @@ The Micro XCRE-DDS agent terminal will show the equivalent topics that are creat
 ```
 pxh>
 ```
-Input the command:
+Input the command (on the same line as pxh>):
 ```
 param import working-params
 ```
