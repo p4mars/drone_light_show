@@ -123,7 +123,7 @@ pxh> INFO  [commander] Ready for takeoff!
 ```
 Once this displays, you can now move to running the simulation. 
 
-## Running the simulation
+## Running the Simulation
 
 1. Open a new terminal and source ROS2 and the ROS2 workspace
 ```
