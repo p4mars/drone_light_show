@@ -115,7 +115,7 @@ pxh> ...
 ```
 Press enter and input the command (with "pxh>" already provided by the terminal) below to bypass certain pre-arming checks that are not applicable for this simulation.
 ```
-pxh> param import working.params
+pxh> param import /home/ros/ros2_ws/working.params
 ```
 After which, the terminal will display some messages, ending with:
 ```
