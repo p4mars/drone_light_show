@@ -3,7 +3,8 @@
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
-from px4_msgs.msg import OffboardControlMode, TrajectorySetpoint, VehicleCommand, VehicleLocalPosition, VehicleStatus
+from px4_msgs.msg import \
+    OffboardControlMode, TrajectorySetpoint, VehicleCommand, VehicleLocalPosition, VehicleStatus, SensorGps
 import numpy as np 
 
 class OffboardControl(Node):
@@ -18,20 +19,22 @@ class OffboardControl(Node):
             history=HistoryPolicy.KEEP_LAST,
             depth=1
         )
-
+        
         # Create publishers
         self.offboard_control_mode_publisher = self.create_publisher(
             OffboardControlMode, '/fmu/in/offboard_control_mode', qos_profile)
         self.trajectory_setpoint_publisher = self.create_publisher(
             TrajectorySetpoint, '/fmu/in/trajectory_setpoint', qos_profile)
-        self.vehicle_command_publisher = self.create_publisher(
-            VehicleCommand, '/fmu/in/vehicle_command', qos_profile)
+2. In the __init__ definition, define the subscriber. In this example, we will use the a function called `gps_position_callback` to access the contents of the SensorGps topic.
 
+        
         # Create subscribers
         self.vehicle_local_position_subscriber = self.create_subscription(
             VehicleLocalPosition, '/fmu/out/vehicle_local_position', self.vehicle_local_position_callback, qos_profile)
         self.vehicle_status_subscriber = self.create_subscription(
             VehicleStatus, '/fmu/out/vehicle_status', self.vehicle_status_callback, qos_profile)
+        self.gps_position_subscriber = self.create_subscription(
+            SensorGps, '/fmu/out/vehicle_gps_position', self.gps_position_callback, qos_profile)
 
         # Initialise variables
         self.offboard_setpoint_counter = 0 # To count time passed
@@ -48,6 +51,13 @@ class OffboardControl(Node):
     # Callback function for vehicle_local_position topic subscriber
     def vehicle_local_position_callback(self, vehicle_local_position):
         self.vehicle_local_position = vehicle_local_position
+
+    def gps_position_callback(self, gps_position):
+        # Print GPS position data
+        lat = gps_position.latitude_deg
+        lon = gps_position.longitude_deg
+        alt = gps_position.altitude_msl_m
+        #self.get_logger().info(f'Lat: {lat:.6f}, Lon: {lon:.6f}, Alt (MSL): {alt:.2f} m')
 
     # Callback function for vehicle_status topic subscriber.
     def vehicle_status_callback(self, vehicle_status):
@@ -114,12 +124,12 @@ class OffboardControl(Node):
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
         self.trajectory_setpoint_publisher.publish(msg)
         self.get_logger().info(f"Publishing position setpoints {[x, y, z]}")
-
+        
     # CONTROL LOOP
     def timer_callback(self) -> None:
         # Always maintain offboard heartbeat 
         self.publish_offboard_control_heartbeat_signal()
-        
+
         # Current altitude 
         current_z = self.vehicle_local_position.z
         
