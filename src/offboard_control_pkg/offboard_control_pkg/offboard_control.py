@@ -25,7 +25,8 @@ class OffboardControl(Node):
             OffboardControlMode, '/fmu/in/offboard_control_mode', qos_profile)
         self.trajectory_setpoint_publisher = self.create_publisher(
             TrajectorySetpoint, '/fmu/in/trajectory_setpoint', qos_profile)
-2. In the __init__ definition, define the subscriber. In this example, we will use the a function called `gps_position_callback` to access the contents of the SensorGps topic.
+        self.vehicle_command_publisher = self.create_publisher(
+            VehicleCommand, '/fmu/in/vehicle_command', qos_profile)
 
         
         # Create subscribers
@@ -57,7 +58,7 @@ class OffboardControl(Node):
         lat = gps_position.latitude_deg
         lon = gps_position.longitude_deg
         alt = gps_position.altitude_msl_m
-        #self.get_logger().info(f'Lat: {lat:.6f}, Lon: {lon:.6f}, Alt (MSL): {alt:.2f} m')
+        self.get_logger().info(f'Lat: {lat:.6f}, Lon: {lon:.6f}, Alt (MSL): {alt:.2f} m')
 
     # Callback function for vehicle_status topic subscriber.
     def vehicle_status_callback(self, vehicle_status):
