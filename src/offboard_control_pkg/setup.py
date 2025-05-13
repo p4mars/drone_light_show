@@ -22,7 +22,7 @@ setup(
     license='TODO: License declaration',
     tests_require=['pytest'],
     entry_points={
-        'console_scripts': [ 'offboard_control_node = offboard_control_pkg.offboard_control:main'
+        'console_scripts': [ 'offboard_control_node = offboard_control_pkg.offboard_control_multi_vehicle:main'
         ],
     },
 )
