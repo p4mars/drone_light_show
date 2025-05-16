@@ -35,9 +35,9 @@ class Drone:
         # State variables
         self.vehicle_local_position = VehicleLocalPosition()
         self.vehicle_status = VehicleStatus()
-        self.vehicle_local_position = VehicleLocalPosition()
-        self.z_position = self.vehicle_local_position.z
-        
+        self.target_system = self.vehicle_status.system_id  
+        self.is_landing_triggered = False 
+        self.is_disarmed = False
 
     def vehicle_local_position_callback(self, msg):
         self.vehicle_local_position = msg
@@ -72,13 +72,12 @@ class OffboardControl_MV(Node):
         self.offboard_setpoint_counter = 0 # To count time passed
         self.takeoff_height = -2.0 # positive downward!
         self.radius = 1.0
-        self.is_landing_triggered = False  # Add to __init__
+         # Add to __init__
 
         # Create a timer to publish control commands
         self.timer = self.create_timer(0.1, self.timer_callback)
 
-    
-    def publish_vehicle_command(self, vehicle, command, **params) -> None:
+    def publish_vehicle_command(self, vehicle, target, command, **params) -> None:
         msg = VehicleCommand()
         msg.command = command
         msg.param1 = params.get("param1", 0.0)
@@ -88,10 +87,7 @@ class OffboardControl_MV(Node):
         msg.param5 = params.get("param5", 0.0)
         msg.param6 = params.get("param6", 0.0)
         msg.param7 = params.get("param7", 0.0)
-        if vehicle == self.vehicles[0]:
-            msg.target_system = 1
-        elif vehicle == self.vehicles[1]:
-            msg.target_system = 2
+        msg.target_system = target
         msg.target_component = 1
         msg.source_system = 1
         msg.source_component = 1
@@ -102,25 +98,25 @@ class OffboardControl_MV(Node):
     #Arming the vehicle by sending the command
     def arm(self, vehicle):
         #  vehicle, command, **params
-        self.publish_vehicle_command(vehicle, 
+        self.publish_vehicle_command(vehicle, vehicle.target_system,
             VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=1.0)
         self.get_logger().info(f'[{vehicle.namespace}] Arm command sent')
 
     # Disarming the vehicle by sending the command
     def disarm(self, vehicle):
-        self.publish_vehicle_command(vehicle, 
+        self.publish_vehicle_command(vehicle, vehicle.target_system,
             VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=0.0)
         self.get_logger().info(f'[{vehicle.namespace}] Disarm command sent')
 
     # Offboard mode vehicle command
     def engage_offboard_mode(self, vehicle):
-        self.publish_vehicle_command(vehicle, 
+        self.publish_vehicle_command(vehicle, vehicle.target_system,
             VehicleCommand.VEHICLE_CMD_DO_SET_MODE, param1=1.0, param2=6.0)
         self.get_logger().info(f"[{vehicle.namespace}]Switching to offboard mode")
 
     # Landing vehicle command
     def land(self, vehicle):
-        self.publish_vehicle_command(vehicle, VehicleCommand.VEHICLE_CMD_NAV_LAND)
+        self.publish_vehicle_command(vehicle, vehicle.target_system, VehicleCommand.VEHICLE_CMD_NAV_LAND)
         self.get_logger().info(f"[{vehicle.namespace}]Switching to land mode")
 
     # Sending the messages to change into offboard mode
@@ -128,10 +124,10 @@ class OffboardControl_MV(Node):
     def publish_offboard_control_heartbeat_signal(self, vehicle):
         msg = OffboardControlMode()
         msg.position = True
-        #msg.velocity = False
-        #msg.acceleration = False
-        #msg.attitude = False
-        #msg.body_rate = False
+        msg.velocity = False
+        msg.acceleration = False
+        msg.attitude = False
+        msg.body_rate = False
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
         vehicle.offboard_control_mode_publisher.publish(msg)
 
@@ -146,7 +142,6 @@ class OffboardControl_MV(Node):
         
     # CONTROL LOOP
     def timer_callback(self) -> None:
-
         for vehicle in self.vehicles:
             self.publish_offboard_control_heartbeat_signal(vehicle)
             
@@ -156,7 +151,7 @@ class OffboardControl_MV(Node):
         ## Will takeoff and maintain position for 5 seconds
         ## ---------------------------------------------------
         if self.offboard_setpoint_counter < 100:
-              # ~5 seconds at 10Hz timer
+            # ~10 seconds at 10Hz timer
             # Publish setpoint continuously
             for vehicle in self.vehicles:
                 self.publish_position_setpoint(vehicle, 0.0, 0.0, self.takeoff_height)
@@ -177,7 +172,7 @@ class OffboardControl_MV(Node):
         ## PHASE 2: Circle trajectory
         ## ---------------------------------------------------
         for vehicle in self.vehicles:
-            if vehicle.z_position >= self.takeoff_height*0.95:
+            if vehicle.vehicle_local_position.z <= self.takeoff_height*0.95:
             # Check if the drone is armed and in offboard mode
                 if vehicle.theta < 2 * np.pi:
                     # Publish circle trajectory
@@ -187,29 +182,26 @@ class OffboardControl_MV(Node):
                     self.publish_position_setpoint(vehicle, x, y, self.takeoff_height)
                     vehicle.theta += 0.1 # Increment theta for circular motion
 
-            # ---------------------------------------------------
-            # PHASE 3: Landing
-            # ---------------------------------------------------
-            #INITIATE LANDING
-
-                elif vehicle.theta >= 2 * np.pi and not self.is_landing_triggered:
+                # ---------------------------------------------------
+                # PHASE 3: Landing
+                # ---------------------------------------------------
+                #INITIATE LANDING
+                elif vehicle.theta >= 2 * np.pi and not vehicle.is_landing_triggered:
                     self.is_landing_triggered = True
                     self.land(vehicle)
                     self.get_logger().info(f"[{vehicle.namespace}] Landing initiated")
 
-                # If not, just hold position
-            else:
-                self.publish_position_setpoint(vehicle, 0.0, 0.0, self.takeoff_height)
-
-            # Disarm the drone after landing
-            if self.is_landing_triggered and vehicle.vehicle_local_position.z > -0.5:  # Within 0.5m of ground (NED frame)
+                    # Disarm the drone after landing
+            if vehicle.is_landing_triggered and vehicle.vehicle_local_position.z > -0.5:  # Within 0.5m of ground (NED frame)
                 self.get_logger().info(f"[{vehicle.namespace}] Landed successfully")
                 self.disarm(vehicle)
-                rclpy.shutdown()
-    
+                vehicle.is_disarmed = True
+            
+        if self.vehicles[0].is_disarmed and self.vehicles[1].is_disarmed:
+            rclpy.shutdown()
+            
         # Increment counter 
-        if self.offboard_setpoint_counter < 1000:  
-            self.offboard_setpoint_counter += 1
+        self.offboard_setpoint_counter += 1
 
 def main(args=None) -> None:
     print('Starting offboard control node...')
