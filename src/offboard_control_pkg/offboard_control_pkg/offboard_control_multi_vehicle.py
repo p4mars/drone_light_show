@@ -198,14 +198,14 @@ class OffboardControl_MV(Node):
                     self.get_logger().info(f"[{vehicle.namespace}] Landing initiated")
 
                 # If not, just hold position
-                else:
-                    self.publish_position_setpoint(vehicle, 0.0, 0.0, self.takeoff_height)
+            else:
+                self.publish_position_setpoint(vehicle, 0.0, 0.0, self.takeoff_height)
 
-                # Disarm the drone after landing
-                if self.is_landing_triggered and vehicle.vehicle_local_position.z > -0.5:  # Within 0.5m of ground (NED frame)
-                    self.get_logger().info(f"[{vehicle.namespace}] Landed successfully")
-                    self.disarm(vehicle)
-                    rclpy.shutdown()
+            # Disarm the drone after landing
+            if self.is_landing_triggered and vehicle.vehicle_local_position.z > -0.5:  # Within 0.5m of ground (NED frame)
+                self.get_logger().info(f"[{vehicle.namespace}] Landed successfully")
+                self.disarm(vehicle)
+                rclpy.shutdown()
     
         # Increment counter 
         if self.offboard_setpoint_counter < 1000:  
