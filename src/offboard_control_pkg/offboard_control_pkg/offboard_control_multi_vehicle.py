@@ -34,6 +34,7 @@ class Drone:
         # State variables
         self.vehicle_local_position = VehicleLocalPosition()
         self.vehicle_status = VehicleStatus()
+        self.theta = 0.0
 
     def vehicle_local_position_callback(self, msg):
         self.vehicle_local_position = msg
@@ -68,7 +69,7 @@ class OffboardControl_MV(Node):
         self.offboard_setpoint_counter = 0 # To count time passed
         self.takeoff_height = -2.0 # positive downward!
         self.radius = 1.0
-        self.theta = 0
+        #self.theta = 0
         self.is_landing_triggered = False  # Add to __init__
 
         # Create a timer to publish control commands
@@ -143,66 +144,62 @@ class OffboardControl_MV(Node):
         for vehicle in self.vehicles:
             self.publish_offboard_control_heartbeat_signal(vehicle)
             
-        ## Always maintain offboard heartbeat 
-        #self.publish_offboard_control_heartbeat_signal()
-#
-        ## Current altitude 
-        #current_z = self.vehicle_local_position.z
-        #
         ## ---------------------------------------------------
         ## PHASE 1: Initialisation (first 5 seconds)
         ## Set the drone to offboard mode and arm it
         ## Will takeoff and maintain position for 5 seconds
         ## ---------------------------------------------------
-        if self.offboard_setpoint_counter < 100:  # ~5 seconds at 10Hz timer
+        if self.offboard_setpoint_counter < 100:
+              # ~5 seconds at 10Hz timer
             # Publish setpoint continuously
-            self.publish_position_setpoint(vehicle, 0.0, 0.0, self.takeoff_height)
+            for vehicle in self.vehicles:
+                self.publish_position_setpoint(vehicle, 0.0, 0.0, self.takeoff_height)
             
-            # Engage offboard after 1 second
-            # Sending actual offboard command
-            if self.offboard_setpoint_counter == 25:
-                self.engage_offboard_mode(vehicle)
-                self.get_logger().info(f"[{vehicle.namespace}] Offboard mode requested")
-                
-            # Arm after 2 seconds
-            # Sending arm command -> Will arm and take off
-            elif self.offboard_setpoint_counter == 35:
-                self.arm(vehicle)
-                self.get_logger().info(f"[{vehicle.namespace}] Arm command sent")
+                # Engage offboard after 1 second
+                # Sending actual offboard command
+                if self.offboard_setpoint_counter == 25:
+                    self.engage_offboard_mode(vehicle)
+                    self.get_logger().info(f"[{vehicle.namespace}] Offboard mode requested")
+                    
+                # Arm after 2 seconds
+                # Sending arm command -> Will arm and take off
+                elif self.offboard_setpoint_counter == 35:
+                    self.arm(vehicle)
+                    self.get_logger().info(f"[{vehicle.namespace}] Arm command sent")
         
         ## ---------------------------------------------------
         ## PHASE 2: Circle trajectory
         ## ---------------------------------------------------
         if self.offboard_setpoint_counter >= 100:
             # Check if the drone is armed and in offboard mode
-            if self.theta < 2 * np.pi:
+            for vehicle in self.vehicles:
+                if self.theta < 2 * np.pi:
+                    # Publish circle trajectory
+                    x = self.radius * np.cos(self.theta)
+                    y = self.radius * np.sin(self.theta)
 
-                # Publish circle trajectory
-                x = self.radius * np.cos(self.theta)
-                y = self.radius * np.sin(self.theta)
+                    self.publish_position_setpoint(vehicle, x, y, self.takeoff_height)
+                    self.theta += 0.1 # Increment theta for circular motion
 
-                self.publish_position_setpoint(vehicle, x, y, self.takeoff_height)
-                self.theta += 0.1 # Increment theta for circular motion
-
-            # If not, just hold position
-            else:
-                
-                self.publish_position_setpoint(vehicle, 0.0, 0.0, self.takeoff_height)
+                # If not, just hold position
+                else:
+                    self.publish_position_setpoint(vehicle, 0.0, 0.0, self.takeoff_height)
                 
             # ---------------------------------------------------
             # PHASE 3: Landing
             # ---------------------------------------------------
             #INITIATE LANDING
-            if self.theta >= 2 * np.pi and not self.is_landing_triggered:
-                self.is_landing_triggered = True
-                self.land(vehicle)
-                self.get_logger().info(f"[{vehicle.namespace}] Landing initiated")
+            for vehicle in self.vehicles:
+                if self.theta >= 2 * np.pi and not self.is_landing_triggered:
+                    self.is_landing_triggered = True
+                    self.land(vehicle)
+                    self.get_logger().info(f"[{vehicle.namespace}] Landing initiated")
 
-            # Disarm the drone after landing
-            if self.is_landing_triggered and vehicle.vehicle_local_position.z > -0.5:  # Within 0.5m of ground (NED frame)
-                self.get_logger().info(f"[{vehicle.namespace}] Landed successfully")
-                self.disarm(vehicle)
-                rclpy.shutdown()
+                # Disarm the drone after landing
+                if self.is_landing_triggered and vehicle.vehicle_local_position.z > -0.5:  # Within 0.5m of ground (NED frame)
+                    self.get_logger().info(f"[{vehicle.namespace}] Landed successfully")
+                    self.disarm(vehicle)
+                    rclpy.shutdown()
     
         # Increment counter 
         if self.offboard_setpoint_counter < 1000:  

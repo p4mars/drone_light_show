@@ -18,7 +18,7 @@ setup(
     zip_safe=True,
     maintainer='ros',
     maintainer_email='l.jordan@student.tudelft.nl',
-    description='TODO: Package description',
+    description='Meow meow meow',
     license='TODO: License declaration',
     tests_require=['pytest'],
     entry_points={
