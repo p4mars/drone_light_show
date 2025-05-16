@@ -46,7 +46,7 @@ class Drone:
         lat = msg.latitude_deg
         lon = msg.longitude_deg
         alt = msg.altitude_msl_m
-        self.node.get_logger().info(f'[{self.namespace}] Lat: {lat:.6f}, Lon: {lon:.6f}, Alt (MSL): {alt:.2f} m')
+        #self.node.get_logger().info(f'[{self.namespace}] Lat: {lat:.6f}, Lon: {lon:.6f}, Alt (MSL): {alt:.2f} m')
 
 class OffboardControl_MV(Node):
 
@@ -174,13 +174,13 @@ class OffboardControl_MV(Node):
         if self.offboard_setpoint_counter >= 100:
             # Check if the drone is armed and in offboard mode
             for vehicle in self.vehicles:
-                if self.theta < 2 * np.pi:
+                if vehicle.theta < 2 * np.pi:
                     # Publish circle trajectory
-                    x = self.radius * np.cos(self.theta)
-                    y = self.radius * np.sin(self.theta)
+                    x = self.radius * np.cos(vehicle.theta)
+                    y = self.radius * np.sin(vehicle.theta)
 
                     self.publish_position_setpoint(vehicle, x, y, self.takeoff_height)
-                    self.theta += 0.1 # Increment theta for circular motion
+                    vehicle.theta += 0.1 # Increment theta for circular motion
 
                 # If not, just hold position
                 else:
@@ -191,7 +191,7 @@ class OffboardControl_MV(Node):
             # ---------------------------------------------------
             #INITIATE LANDING
             for vehicle in self.vehicles:
-                if self.theta >= 2 * np.pi and not self.is_landing_triggered:
+                if vehicle.theta >= 2 * np.pi and not self.is_landing_triggered:
                     self.is_landing_triggered = True
                     self.land(vehicle)
                     self.get_logger().info(f"[{vehicle.namespace}] Landing initiated")
