@@ -96,25 +96,26 @@ class OffboardControl_MV(Node):
 
     #Arming the vehicle by sending the command
     def arm(self, vehicle):
-        self.publish_vehicle_command(
+        #  vehicle, command, **params
+        self.publish_vehicle_command(vehicle, 
             VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=1.0)
         self.get_logger().info(f'[{vehicle.namespace}] Arm command sent')
 
     # Disarming the vehicle by sending the command
     def disarm(self, vehicle):
-        self.publish_vehicle_command(
+        self.publish_vehicle_command(vehicle, 
             VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=0.0)
         self.get_logger().info(f'[{vehicle.namespace}] Disarm command sent')
 
     # Offboard mode vehicle command
     def engage_offboard_mode(self, vehicle):
-        self.publish_vehicle_command(
+        self.publish_vehicle_command(vehicle, 
             VehicleCommand.VEHICLE_CMD_DO_SET_MODE, param1=1.0, param2=6.0)
         self.get_logger().info(f"[{vehicle.namespace}]Switching to offboard mode")
 
     # Landing vehicle command
     def land(self, vehicle):
-        self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_LAND)
+        self.publish_vehicle_command(vehicle, VehicleCommand.VEHICLE_CMD_NAV_LAND)
         self.get_logger().info(f"[{vehicle.namespace}]Switching to land mode")
 
     # Sending the messages to change into offboard mode
