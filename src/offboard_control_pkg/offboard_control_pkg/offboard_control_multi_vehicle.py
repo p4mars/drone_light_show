@@ -11,6 +11,7 @@ class Drone:
     def __init__(self, node, namespace, qos_profile):
         self.namespace = namespace
         self.node = node
+        self.theta = 0.0
 
         # Publishers
         self.offboard_control_mode_publisher = node.create_publisher(
@@ -34,7 +35,9 @@ class Drone:
         # State variables
         self.vehicle_local_position = VehicleLocalPosition()
         self.vehicle_status = VehicleStatus()
-        self.theta = 0.0
+        self.vehicle_local_position = VehicleLocalPosition()
+        self.z_position = self.vehicle_local_position.z
+        
 
     def vehicle_local_position_callback(self, msg):
         self.vehicle_local_position = msg
@@ -69,7 +72,6 @@ class OffboardControl_MV(Node):
         self.offboard_setpoint_counter = 0 # To count time passed
         self.takeoff_height = -2.0 # positive downward!
         self.radius = 1.0
-        #self.theta = 0
         self.is_landing_triggered = False  # Add to __init__
 
         # Create a timer to publish control commands
@@ -86,7 +88,10 @@ class OffboardControl_MV(Node):
         msg.param5 = params.get("param5", 0.0)
         msg.param6 = params.get("param6", 0.0)
         msg.param7 = params.get("param7", 0.0)
-        msg.target_system = 1
+        if vehicle == self.vehicles[0]:
+            msg.target_system = 1
+        elif vehicle == self.vehicles[1]:
+            msg.target_system = 2
         msg.target_component = 1
         msg.source_system = 1
         msg.source_component = 1
@@ -171,10 +176,10 @@ class OffboardControl_MV(Node):
         ## ---------------------------------------------------
         ## PHASE 2: Circle trajectory
         ## ---------------------------------------------------
-        if self.offboard_setpoint_counter >= 100:
+        for vehicle in self.vehicles:
+            if vehicle.z_position >= self.takeoff_height*0.95:
             # Check if the drone is armed and in offboard mode
-            for vehicle in self.vehicles:
-                if self.theta < 2 * np.pi:
+                if vehicle.theta < 2 * np.pi:
                     # Publish circle trajectory
                     x = self.radius * np.cos(self.theta)
                     y = self.radius * np.sin(self.theta)
@@ -182,19 +187,19 @@ class OffboardControl_MV(Node):
                     self.publish_position_setpoint(vehicle, x, y, self.takeoff_height)
                     self.theta += 0.1 # Increment theta for circular motion
 
-                # If not, just hold position
-                else:
-                    self.publish_position_setpoint(vehicle, 0.0, 0.0, self.takeoff_height)
-                
             # ---------------------------------------------------
             # PHASE 3: Landing
             # ---------------------------------------------------
             #INITIATE LANDING
-            for vehicle in self.vehicles:
-                if self.theta >= 2 * np.pi and not self.is_landing_triggered:
+
+                elif vehicle.theta >= 2 * np.pi and not self.is_landing_triggered:
                     self.is_landing_triggered = True
                     self.land(vehicle)
                     self.get_logger().info(f"[{vehicle.namespace}] Landing initiated")
+
+                # If not, just hold position
+                else:
+                    self.publish_position_setpoint(vehicle, 0.0, 0.0, self.takeoff_height)
 
                 # Disarm the drone after landing
                 if self.is_landing_triggered and vehicle.vehicle_local_position.z > -0.5:  # Within 0.5m of ground (NED frame)
