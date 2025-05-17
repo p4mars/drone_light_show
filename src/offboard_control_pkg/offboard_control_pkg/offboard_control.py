@@ -34,8 +34,6 @@ class OffboardControl(Node):
             VehicleLocalPosition, '/fmu/out/vehicle_local_position', self.vehicle_local_position_callback, qos_profile)
         self.vehicle_status_subscriber = self.create_subscription(
             VehicleStatus, '/fmu/out/vehicle_status', self.vehicle_status_callback, qos_profile)
-        self.gps_position_subscriber = self.create_subscription(
-            SensorGps, '/fmu/out/vehicle_gps_position', self.gps_position_callback, qos_profile)
 
         # Initialise variables
         self.offboard_setpoint_counter = 0 # To count time passed
@@ -52,13 +50,6 @@ class OffboardControl(Node):
     # Callback function for vehicle_local_position topic subscriber
     def vehicle_local_position_callback(self, vehicle_local_position):
         self.vehicle_local_position = vehicle_local_position
-
-    def gps_position_callback(self, gps_position):
-        # Print GPS position data
-        lat = gps_position.latitude_deg
-        lon = gps_position.longitude_deg
-        alt = gps_position.altitude_msl_m
-        self.get_logger().info(f'Lat: {lat:.6f}, Lon: {lon:.6f}, Alt (MSL): {alt:.2f} m')
 
     # Callback function for vehicle_status topic subscriber.
     def vehicle_status_callback(self, vehicle_status):
