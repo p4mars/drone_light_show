@@ -4,7 +4,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
 from px4_msgs.msg import \
-    OffboardControlMode, TrajectorySetpoint, VehicleCommand, VehicleLocalPosition, VehicleStatus, SensorGps
+    OffboardControlMode, TrajectorySetpoint, VehicleCommand, VehicleLocalPosition, VehicleStatus, SensorGps, VehicleGlobalPosition
 import numpy as np 
 
 class Drone:
@@ -31,11 +31,18 @@ class Drone:
         self.gps_position_subscriber = node.create_subscription(
             SensorGps, f'{namespace}/fmu/out/vehicle_gps_position',
             self.gps_position_callback, qos_profile)
+        
+        ######## Global position is not the raw GPS position and is instead the estimated global position based on the
+        ######## drone control inputs and a Kalman filter in order to reduce noise
+        self.global_pos_subscriber = node.create_subscription(
+            VehicleGlobalPosition, f'{namespace}/fmu/out/vehicle_global_position',
+            self.global_position_callback, qos_profile)
 
         # State variables
         self.vehicle_local_position = VehicleLocalPosition()
         self.vehicle_status = VehicleStatus()
-        self.target_system = self.vehicle_status.system_id  
+        self.global_pos = VehicleGlobalPosition()  
+        self.target_system = self.vehicle_status.system_id
         self.is_landing_triggered = False 
         self.is_disarmed = False
 
@@ -50,6 +57,10 @@ class Drone:
         lon = msg.longitude_deg
         alt = msg.altitude_msl_m
         #self.node.get_logger().info(f'[{self.namespace}] Lat: {lat:.6f}, Lon: {lon:.6f}, Alt (MSL): {alt:.2f} m')
+    
+    def global_position_callback(self, msg):
+        self.global_pos = msg
+        #self.node.get_logger().info(f'[{self.namespace}] Global Position - Lat: {msg.lat}, Lon: {msg.lon}, Alt: {msg.alt} m')
 
 class OffboardControl_MV(Node):
 
@@ -76,6 +87,7 @@ class OffboardControl_MV(Node):
 
         # Create a timer to publish control commands
         self.timer = self.create_timer(0.1, self.timer_callback)
+        self.position_change = 0
 
     def publish_vehicle_command(self, vehicle, target, command, **params) -> None:
         msg = VehicleCommand()
@@ -139,6 +151,24 @@ class OffboardControl_MV(Node):
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
         vehicle.trajectory_setpoint_publisher.publish(msg)
         self.get_logger().info(f"[{vehicle.namespace}] Publishing position setpoint: {[x, y, z]}")
+
+    def follower_frame_transform(self, vehicle_leader, follower_number):
+        Leader_latitude = vehicle_leader.global_pos.lat
+        Leader_longitude = vehicle_leader.global_pos.lon
+        #Leader_altitude = vehicle_leader.global_pos.alt
+
+        follower_latitude = self.vehicles[follower_number].global_pos.lat
+        follower_longitude = self.vehicles[follower_number].global_pos.lon
+        #follower_altitude = self.vehicles[follower_number].global_pos.alt
+
+        #calculate the difference in follower coordinates wrt the leader 
+        # This is the follower position in the leader local frame
+        delta_latitude = follower_latitude - Leader_latitude
+        delta_longitude = follower_longitude - Leader_longitude
+        #delta_altitude = follower_altitude - Leader_altitude
+
+        return [delta_latitude, delta_longitude]
+
         
     # CONTROL LOOP
     def timer_callback(self) -> None:
@@ -150,13 +180,21 @@ class OffboardControl_MV(Node):
         ## Set the drone to offboard mode and arm it
         ## Will takeoff and maintain position for 5 seconds
         ## ---------------------------------------------------
-        if self.offboard_setpoint_counter < 100:
+        coordinate_transforms = []
+        if self.offboard_setpoint_counter == 30:
+            for i,vehicle in enumerate(self.vehicles):
+                if i != 0:
+                    #### Getting all of the coordinate transforms for the leader drone being drone 0
+                    coordinate_transformation = self.follower_frame_transform(self.vehicles[0], i)
+                    coordinate_transforms.append(coordinate_transformation)
+
+        if self.offboard_setpoint_counter < 70:
             # ~10 seconds at 10Hz timer
             # Publish setpoint continuously
             for vehicle in self.vehicles:
                 self.publish_position_setpoint(vehicle, 0.0, 0.0, self.takeoff_height)
             
-                # Engage offboard after 1 second
+                # Engage offboard after 1.2 second
                 # Sending actual offboard command
                 if self.offboard_setpoint_counter == 25:
                     self.engage_offboard_mode(vehicle)
@@ -164,13 +202,14 @@ class OffboardControl_MV(Node):
                     
                 # Arm after 2 seconds
                 # Sending arm command -> Will arm and take off
-                elif self.offboard_setpoint_counter == 35:
+                elif self.offboard_setpoint_counter == 40:
                     self.arm(vehicle)
                     self.get_logger().info(f"[{vehicle.namespace}] Arm command sent")
         
         ## ---------------------------------------------------
-        ## PHASE 2: Circle trajectory
+        ## PHASE 2: Circle trajectory example
         ## ---------------------------------------------------
+        """
         for vehicle in self.vehicles:
             if vehicle.vehicle_local_position.z <= self.takeoff_height*0.95:
             # Check if the drone is armed and in offboard mode
@@ -196,12 +235,58 @@ class OffboardControl_MV(Node):
                 self.get_logger().info(f"[{vehicle.namespace}] Landed successfully")
                 self.disarm(vehicle)
                 vehicle.is_disarmed = True
+            """
+        
+        ## ---------------------------------------------------
+        ## PHASE 2.1: Frame transform example
+        ## ---------------------------------------------------
+        Triangle_corner_positions = [[0.0,0.0,2.0], [3.0,0.0,2.0], [1.5,2.6, 2.0]] # an equilateral triangle example in the leader frame
+        
+        positional_accuracy_margin = 0.1 # 10cm accuracy margin
+
+        ## publishing the leader position setpoint
+        # Check if all drones are within the positional accuracy margin of their target positions
+        if self.offboard_setpoint_counter >= 50:
+            if self.position_change < len(Triangle_corner_positions) - 1:
+                all_close = True
+                for i, vehicle in enumerate(self.vehicles):
+                    if i == 0:
+                        target_x = Triangle_corner_positions[self.position_change][0]
+                        target_y = Triangle_corner_positions[self.position_change][1]
+                    else:
+                        target_x = Triangle_corner_positions[i+self.position_change][0] - coordinate_transforms[i-1][0]
+                        target_y = Triangle_corner_positions[i+self.position_change][1] - coordinate_transforms[i-1][1]
+                    current_x = vehicle.vehicle_local_position.x
+                    current_y = vehicle.vehicle_local_position.y
+                    self.publish_position_setpoint(vehicle, target_x, target_y, self.takeoff_height)
+
+                    dist = np.sqrt((current_x - target_x) ** 2 + (current_y - target_y) ** 2)
+                    if dist > positional_accuracy_margin:
+                        all_close = False
+
+                if all_close:
+                    self.get_logger().info("All drones are close to their target positions.")
+                    self.position_change += 1
+
+
+            else:
+                ### make all drones return to their original positions
+                for i, vehicle in enumerate(self.vehicles):
+                    self.publish_position_setpoint(vehicle, 0.0, 0.0, self.takeoff_height)
+                    current_x = vehicle.vehicle_local_position.x
+                    current_y = vehicle.vehicle_local_position.y
+                    dist = np.sqrt(current_x ** 2 + current_y ** 2)
+                    if dist < positional_accuracy_margin:
+                        self.get_logger().info(f"[{vehicle.namespace}] Landing initiated")
+                        self.land(vehicle)
+                        vehicle.is_landing_triggered = True
             
         if self.vehicles[0].is_disarmed and self.vehicles[1].is_disarmed:
             rclpy.shutdown()
-            
+        
         # Increment counter 
         self.offboard_setpoint_counter += 1
+                
 
 def main(args=None) -> None:
     print('Starting offboard control node...')
