@@ -1,5 +1,5 @@
 # Drone Light Show Set-up
-This README will show you how to set-up your environment so you have access to ROS2, Gazebo and PX4 along with creating your workspace. It will also show you how to run the simulation provided. 
+This README will show you how to set-up your environment so you have access to ROS2, Gazebo and PX4 along with creating your workspace for the single vehicle test example. It will also show you how to run the simulation provided. 
 
 For more information about the development of this simulation, please refer to our wiki. 
 
