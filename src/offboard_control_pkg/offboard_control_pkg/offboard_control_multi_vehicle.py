@@ -41,7 +41,8 @@ class Drone:
         # State variables
         self.vehicle_local_position = VehicleLocalPosition()
         self.vehicle_status = VehicleStatus()
-        self.global_pos = VehicleGlobalPosition()  
+        self.global_pos = VehicleGlobalPosition()
+        self.coordinate_transform = []  
         self.target_system = self.vehicle_status.system_id
         self.is_landing_triggered = False 
         self.is_disarmed = False
@@ -88,6 +89,7 @@ class OffboardControl_MV(Node):
         # Create a timer to publish control commands
         self.timer = self.create_timer(0.1, self.timer_callback)
         self.position_change = 0
+        
 
     def publish_vehicle_command(self, vehicle, target, command, **params) -> None:
         msg = VehicleCommand()
@@ -153,21 +155,45 @@ class OffboardControl_MV(Node):
         self.get_logger().info(f"[{vehicle.namespace}] Publishing position setpoint: {[x, y, z]}")
 
     def follower_frame_transform(self, vehicle_leader, follower_number):
-        Leader_latitude = vehicle_leader.global_pos.lat
-        Leader_longitude = vehicle_leader.global_pos.lon
+        leader_latitude = vehicle_leader.global_pos.lat
+        leader_longitude = vehicle_leader.global_pos.lon
         #Leader_altitude = vehicle_leader.global_pos.alt
 
         follower_latitude = self.vehicles[follower_number].global_pos.lat
         follower_longitude = self.vehicles[follower_number].global_pos.lon
         #follower_altitude = self.vehicles[follower_number].global_pos.alt
 
+        # Have to convert the degrees to meters:
+        """#### We can assume a spherical Earth, in which case the following calculation can be used according to wiki:
+        #  https://en.wikipedia.org/wiki/Geographic_coordinate_system#Latitude_and_longitude
+        R_earth = 6367449 ## Earth's avergae meridional radius in meters
+        conversion_coeff = np.pi/180*R_earth
+
+        leader_longitude = conversion_coeff * np.cos(leader_latitude)*leader_longitude
+        leader_latitude = conversion_coeff * leader_latitude
+
+        follower_longitude = conversion_coeff * np.cos(follower_latitude)*follower_longitude
+        follower_latitude = conversion_coeff * follower_latitude"""
+        
+        #print(f"Leader: {leader_latitude}, {leader_longitude}")
+        def convert_coordinate_to_meters(latitude, longitude):
+            #### This converts the coordinate degrees to meters as per wikipedia WGS84 conversions 
+            # (accurate to a magnitude of cm)
+            m_latitude_per_deg = 111132.92-559.82*np.cos(2*latitude) + 1.175*np.cos(4*latitude) - 0.0023*np.cos(6*latitude)
+            m_longitude_per_deg = 111412.84*np.cos(latitude) - 93.5*np.cos(3*latitude) + 0.118*np.cos(5*latitude)
+            m_latitude = latitude * m_latitude_per_deg
+            m_longitude = longitude * m_longitude_per_deg
+            return m_latitude, m_longitude
+
+        leader_latitude, leader_longitude = convert_coordinate_to_meters(leader_latitude, leader_longitude) 
+        follower_latitude, follower_longitude = convert_coordinate_to_meters(follower_latitude, follower_longitude)
         #calculate the difference in follower coordinates wrt the leader 
         # This is the follower position in the leader local frame
-        delta_latitude = follower_latitude - Leader_latitude
-        delta_longitude = follower_longitude - Leader_longitude
+        delta_latitude = follower_latitude - leader_latitude
+        delta_longitude = follower_longitude - leader_longitude
         #delta_altitude = follower_altitude - Leader_altitude
 
-        return [delta_latitude, delta_longitude]
+        self.vehicles[follower_number].coordinate_transform = [delta_latitude, delta_longitude] #, delta_altitude]
 
         
     # CONTROL LOOP
@@ -180,15 +206,15 @@ class OffboardControl_MV(Node):
         ## Set the drone to offboard mode and arm it
         ## Will takeoff and maintain position for 5 seconds
         ## ---------------------------------------------------
-        coordinate_transforms = []
-        if self.offboard_setpoint_counter == 30:
-            for i,vehicle in enumerate(self.vehicles):
+
+        if self.offboard_setpoint_counter == 1:
+            for i, vehicle in enumerate(self.vehicles):
                 if i != 0:
                     #### Getting all of the coordinate transforms for the leader drone being drone 0
-                    coordinate_transformation = self.follower_frame_transform(self.vehicles[0], i)
-                    coordinate_transforms.append(coordinate_transformation)
+                    self.follower_frame_transform(self.vehicles[0], i)
+                    print(vehicle.coordinate_transform)
 
-        if self.offboard_setpoint_counter < 70:
+        if self.offboard_setpoint_counter < 100:
             # ~10 seconds at 10Hz timer
             # Publish setpoint continuously
             for vehicle in self.vehicles:
@@ -202,7 +228,7 @@ class OffboardControl_MV(Node):
                     
                 # Arm after 2 seconds
                 # Sending arm command -> Will arm and take off
-                elif self.offboard_setpoint_counter == 40:
+                elif self.offboard_setpoint_counter == 50:
                     self.arm(vehicle)
                     self.get_logger().info(f"[{vehicle.namespace}] Arm command sent")
         
@@ -240,13 +266,13 @@ class OffboardControl_MV(Node):
         ## ---------------------------------------------------
         ## PHASE 2.1: Frame transform example
         ## ---------------------------------------------------
-        Triangle_corner_positions = [[0.0,0.0,2.0], [3.0,0.0,2.0], [1.5,2.6, 2.0]] # an equilateral triangle example in the leader frame
+        Triangle_corner_positions = [[3.0,0.0,2.0], [1.5,2.6, 2.0], [0.0,0.0,2.0]] # an equilateral triangle example in the leader frame
         
         positional_accuracy_margin = 0.1 # 10cm accuracy margin
 
         ## publishing the leader position setpoint
         # Check if all drones are within the positional accuracy margin of their target positions
-        if self.offboard_setpoint_counter >= 50:
+        if self.offboard_setpoint_counter >= 100:
             if self.position_change < len(Triangle_corner_positions) - 1:
                 all_close = True
                 for i, vehicle in enumerate(self.vehicles):
@@ -254,8 +280,15 @@ class OffboardControl_MV(Node):
                         target_x = Triangle_corner_positions[self.position_change][0]
                         target_y = Triangle_corner_positions[self.position_change][1]
                     else:
-                        target_x = Triangle_corner_positions[i+self.position_change][0] - coordinate_transforms[i-1][0]
-                        target_y = Triangle_corner_positions[i+self.position_change][1] - coordinate_transforms[i-1][1]
+                        # Check bounds before accessing lists
+                        idx = self.position_change + i
+                        print(f"idx: {idx}", "i-1: ", i-1)
+                        print(f"coordinate_transforms[0]: {vehicle.coordinate_transform}")
+                        target_x = Triangle_corner_positions[idx][0] - vehicle.coordinate_transform[0]
+                        target_y = Triangle_corner_positions[idx][1] - vehicle.coordinate_transform[1]
+                        print(f"coordinate_transforms[0]: {vehicle.coordinate_transform}")
+                        target_x = Triangle_corner_positions[idx][0] - vehicle.coordinate_transform[0]
+                        target_y = Triangle_corner_positions[idx][1] - vehicle.coordinate_transform[1]
                     current_x = vehicle.vehicle_local_position.x
                     current_y = vehicle.vehicle_local_position.y
                     self.publish_position_setpoint(vehicle, target_x, target_y, self.takeoff_height)
@@ -264,9 +297,9 @@ class OffboardControl_MV(Node):
                     if dist > positional_accuracy_margin:
                         all_close = False
 
-                if all_close:
-                    self.get_logger().info("All drones are close to their target positions.")
-                    self.position_change += 1
+            if all_close:
+                self.get_logger().info("All drones are close to their target positions.")
+                self.position_change += 1
 
 
             else:
@@ -276,6 +309,7 @@ class OffboardControl_MV(Node):
                     current_x = vehicle.vehicle_local_position.x
                     current_y = vehicle.vehicle_local_position.y
                     dist = np.sqrt(current_x ** 2 + current_y ** 2)
+                    print(f"dist: {dist}")
                     if dist < positional_accuracy_margin:
                         self.get_logger().info(f"[{vehicle.namespace}] Landing initiated")
                         self.land(vehicle)
