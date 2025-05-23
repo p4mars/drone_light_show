@@ -212,7 +212,7 @@ class OffboardControl_MV(Node):
                 if i != 0:
                     #### Getting all of the coordinate transforms for the leader drone being drone 0
                     self.follower_frame_transform(self.vehicles[0], i)
-                    print(vehicle.coordinate_transform)
+                    #print(vehicle.coordinate_transform)
 
         if self.offboard_setpoint_counter < 100:
             # ~10 seconds at 10Hz timer
@@ -282,11 +282,8 @@ class OffboardControl_MV(Node):
                     else:
                         # Check bounds before accessing lists
                         idx = self.position_change + i
-                        print(f"idx: {idx}", "i-1: ", i-1)
-                        print(f"coordinate_transforms[0]: {vehicle.coordinate_transform}")
-                        target_x = Triangle_corner_positions[idx][0] - vehicle.coordinate_transform[0]
-                        target_y = Triangle_corner_positions[idx][1] - vehicle.coordinate_transform[1]
-                        print(f"coordinate_transforms[0]: {vehicle.coordinate_transform}")
+                        #print(f"idx: {idx}", "i-1: ", i-1)
+                        #print(f"coordinate_transforms[0]: {vehicle.coordinate_transform}")
                         target_x = Triangle_corner_positions[idx][0] - vehicle.coordinate_transform[0]
                         target_y = Triangle_corner_positions[idx][1] - vehicle.coordinate_transform[1]
                     current_x = vehicle.vehicle_local_position.x
@@ -302,7 +299,7 @@ class OffboardControl_MV(Node):
                 self.position_change += 1
 
 
-            else:
+            if self.position_change >= len(Triangle_corner_positions) - 1:
                 ### make all drones return to their original positions
                 for i, vehicle in enumerate(self.vehicles):
                     self.publish_position_setpoint(vehicle, 0.0, 0.0, self.takeoff_height)
