@@ -89,6 +89,7 @@ class OffboardControl_MV(Node):
         # Create a timer to publish control commands
         self.timer = self.create_timer(0.1, self.timer_callback)
         self.position_change = 0
+        self.all_close_counter = 0
         
 
     def publish_vehicle_command(self, vehicle, target, command, **params) -> None:
@@ -220,13 +221,13 @@ class OffboardControl_MV(Node):
             for vehicle in self.vehicles:
                 self.publish_position_setpoint(vehicle, 0.0, 0.0, self.takeoff_height)
             
-                # Engage offboard after 1.2 second
+                # Engage offboard after 2.5 second
                 # Sending actual offboard command
                 if self.offboard_setpoint_counter == 25:
                     self.engage_offboard_mode(vehicle)
                     self.get_logger().info(f"[{vehicle.namespace}] Offboard mode requested")
                     
-                # Arm after 2 seconds
+                # Arm after 5 seconds
                 # Sending arm command -> Will arm and take off
                 elif self.offboard_setpoint_counter == 50:
                     self.arm(vehicle)
@@ -273,6 +274,7 @@ class OffboardControl_MV(Node):
         ## publishing the leader position setpoint
         # Check if all drones are within the positional accuracy margin of their target positions
         if self.offboard_setpoint_counter >= 100:
+            all_close = True
             if self.position_change < len(Triangle_corner_positions) - 1:
                 all_close = True
                 for i, vehicle in enumerate(self.vehicles):
@@ -296,7 +298,13 @@ class OffboardControl_MV(Node):
 
             if all_close:
                 self.get_logger().info("All drones are close to their target positions.")
-                self.position_change += 1
+                if self.all_close_counter < 50: # repeat the location check for 5 seconds
+                    self.get_logger().info(f"All drones are close to their target positions. counter = [{self.all_close_counter}]")
+                    self.all_close_counter += 1
+                else:
+                    self.get_logger().info(f"All drones are close to their target positions. Moving to next position. Changes: {self.position_change}")
+                    self.all_close_counter = 0
+                    self.position_change += 1
 
 
             if self.position_change >= len(Triangle_corner_positions) - 1:
@@ -306,11 +314,15 @@ class OffboardControl_MV(Node):
                     current_x = vehicle.vehicle_local_position.x
                     current_y = vehicle.vehicle_local_position.y
                     dist = np.sqrt(current_x ** 2 + current_y ** 2)
-                    print(f"dist: {dist}")
+                    print(f"distance for drone [{i}]: {dist}")
                     if dist < positional_accuracy_margin:
                         self.get_logger().info(f"[{vehicle.namespace}] Landing initiated")
                         self.land(vehicle)
                         vehicle.is_landing_triggered = True
+                        if vehicle.vehicle_local_position.z > -0.5:  # Within 0.5m of ground (NED frame)
+                            self.get_logger().info("Landed successfully")
+                            self.disarm(vehicle)
+                        
             
         if self.vehicles[0].is_disarmed and self.vehicles[1].is_disarmed:
             rclpy.shutdown()
