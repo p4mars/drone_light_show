@@ -156,13 +156,12 @@ class OffboardControl_MV(Node):
         self.get_logger().info(f"[{vehicle.namespace}] Publishing position setpoint: {[x, y, z]}")
 
     def follower_frame_transform(self, vehicle_leader, follower_number):
-        leader_latitude = vehicle_leader.global_pos.lat
-        leader_longitude = vehicle_leader.global_pos.lon
+        leader_latitude_origin = vehicle_leader.vehicle_local_position.ref_lat
+        leader_longitude_origin = vehicle_leader.vehicle_local_position.ref_lon
         #Leader_altitude = vehicle_leader.global_pos.alt
 
-        follower_latitude = self.vehicles[follower_number].global_pos.lat
-        follower_longitude = self.vehicles[follower_number].global_pos.lon
-        #follower_altitude = self.vehicles[follower_number].global_pos.alt
+        follower_latitude_origin = self.vehicles[follower_number].vehicle_local_position.ref_lat
+        follower_longitude_origin = self.vehicles[follower_number].vehicle_local_position.ref_lon        #follower_altitude = self.vehicles[follower_number].global_pos.alt
 
         # Have to convert the degrees to meters:
         """#### We can assume a spherical Earth, in which case the following calculation can be used according to wiki:
@@ -186,15 +185,15 @@ class OffboardControl_MV(Node):
             m_longitude = longitude * m_longitude_per_deg
             return m_latitude, m_longitude
 
-        leader_latitude, leader_longitude = convert_coordinate_to_meters(leader_latitude, leader_longitude) 
-        follower_latitude, follower_longitude = convert_coordinate_to_meters(follower_latitude, follower_longitude)
+        leader_latitude, leader_longitude = convert_coordinate_to_meters(leader_latitude_origin, leader_longitude_origin) 
+        follower_latitude, follower_longitude = convert_coordinate_to_meters(follower_latitude_origin, follower_longitude_origin)
         #calculate the difference in follower coordinates wrt the leader 
         # This is the follower position in the leader local frame
-        delta_latitude = follower_latitude - leader_latitude
-        delta_longitude = follower_longitude - leader_longitude
+        origin_delta_latitude = follower_latitude - leader_latitude
+        origin_delta_longitude = follower_longitude - leader_longitude
         #delta_altitude = follower_altitude - Leader_altitude
 
-        self.vehicles[follower_number].coordinate_transform = [delta_latitude, delta_longitude] #, delta_altitude]
+        self.vehicles[follower_number].coordinate_transform = [origin_delta_latitude, origin_delta_longitude] #, delta_altitude]
 
         
     # CONTROL LOOP
@@ -269,12 +268,12 @@ class OffboardControl_MV(Node):
         ## ---------------------------------------------------
         Triangle_corner_positions = [[3.0,0.0,2.0], [1.5,2.6, 2.0], [0.0,0.0,2.0]] # an equilateral triangle example in the leader frame
         
-        positional_accuracy_margin = 0.1 # 10cm accuracy margin
+        positional_accuracy_margin = 0.5 # 10cm accuracy margin
 
         ## publishing the leader position setpoint
         # Check if all drones are within the positional accuracy margin of their target positions
         if self.offboard_setpoint_counter >= 100:
-            all_close = True
+            all_close = False
             if self.position_change < len(Triangle_corner_positions) - 1:
                 all_close = True
                 for i, vehicle in enumerate(self.vehicles):
@@ -322,7 +321,6 @@ class OffboardControl_MV(Node):
                         if vehicle.vehicle_local_position.z > -0.5:  # Within 0.5m of ground (NED frame)
                             self.get_logger().info("Landed successfully")
                             self.disarm(vehicle)
-                        
             
         if self.vehicles[0].is_disarmed and self.vehicles[1].is_disarmed:
             rclpy.shutdown()
