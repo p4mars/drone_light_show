@@ -20,6 +20,8 @@
     "type=bind,source=${localEnv:HOME}/.ssh,target=/home/ros/.ssh,readonly"
   ],
   "runArgs": [
+    "--gpus=all",
+    "--device=/dev/dri:/dev/dri",
     "--memory=30g",
     "--cap-add=SYS_PTRACE",
     "--security-opt=seccomp:unconfined",
