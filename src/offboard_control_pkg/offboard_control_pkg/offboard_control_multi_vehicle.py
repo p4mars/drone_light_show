@@ -161,7 +161,8 @@ class OffboardControl_MV(Node):
         #Leader_altitude = vehicle_leader.global_pos.alt
 
         follower_latitude_origin = self.vehicles[follower_number].vehicle_local_position.ref_lat
-        follower_longitude_origin = self.vehicles[follower_number].vehicle_local_position.ref_lon        #follower_altitude = self.vehicles[follower_number].global_pos.alt
+        follower_longitude_origin = self.vehicles[follower_number].vehicle_local_position.ref_lon        
+        #follower_altitude = self.vehicles[follower_number].global_pos.alt
 
         # Have to convert the degrees to meters:
         """#### We can assume a spherical Earth, in which case the following calculation can be used according to wiki:
@@ -179,7 +180,9 @@ class OffboardControl_MV(Node):
         def convert_coordinate_to_meters(latitude, longitude):
             #### This converts the coordinate degrees to meters as per wikipedia WGS84 conversions 
             # (accurate to a magnitude of cm)
-            m_latitude_per_deg = 111132.92-559.82*np.cos(2*latitude) + 1.175*np.cos(4*latitude) - 0.0023*np.cos(6*latitude)
+            latitude = np.deg2rad(latitude)
+            longitude = np.deg2rad(longitude)
+            m_latitude_per_deg = 111132.92 - 559.82*np.cos(2*latitude) + 1.175*np.cos(4*latitude) - 0.0023*np.cos(6*latitude)
             m_longitude_per_deg = 111412.84*np.cos(latitude) - 93.5*np.cos(3*latitude) + 0.118*np.cos(5*latitude)
             m_latitude = latitude * m_latitude_per_deg
             m_longitude = longitude * m_longitude_per_deg
@@ -192,7 +195,7 @@ class OffboardControl_MV(Node):
         origin_delta_latitude = follower_latitude - leader_latitude
         origin_delta_longitude = follower_longitude - leader_longitude
         #delta_altitude = follower_altitude - Leader_altitude
-
+        self.get_logger().info(f"coordinate transform for follower {follower_number}: {[origin_delta_longitude, origin_delta_latitude]}") #, delta_altitude]}")
         self.vehicles[follower_number].coordinate_transform = [origin_delta_longitude, origin_delta_latitude] #, delta_altitude]
 
         
@@ -275,7 +278,7 @@ class OffboardControl_MV(Node):
         if self.offboard_setpoint_counter >= 100:
             
             all_close = False
-            if self.position_change <= len(Triangle_corner_positions) - 1:
+            if self.position_change < len(Triangle_corner_positions) - 1:
                 all_close = True
                 for i, vehicle in enumerate(self.vehicles):
                     if i == 0:
