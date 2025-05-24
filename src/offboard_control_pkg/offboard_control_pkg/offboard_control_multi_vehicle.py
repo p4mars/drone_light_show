@@ -193,7 +193,7 @@ class OffboardControl_MV(Node):
         origin_delta_longitude = follower_longitude - leader_longitude
         #delta_altitude = follower_altitude - Leader_altitude
 
-        self.vehicles[follower_number].coordinate_transform = [origin_delta_latitude, origin_delta_longitude] #, delta_altitude]
+        self.vehicles[follower_number].coordinate_transform = [origin_delta_longitude, origin_delta_latitude] #, delta_altitude]
 
         
     # CONTROL LOOP
@@ -266,15 +266,16 @@ class OffboardControl_MV(Node):
         ## ---------------------------------------------------
         ## PHASE 2.1: Frame transform example
         ## ---------------------------------------------------
-        Triangle_corner_positions = [[3.0,0.0,2.0], [1.5,2.6, 2.0], [0.0,0.0,2.0]] # an equilateral triangle example in the leader frame
+        Triangle_corner_positions = [[3.0,0.0,2.0], [1.5,2.6,2.0], [0.0,0.0,2.0], [3.0,0.0,2.0], [1.5,2.6,2.0]] # an equilateral triangle example in the leader frame
         
-        positional_accuracy_margin = 0.5 # 10cm accuracy margin
+        positional_accuracy_margin = 0.2 # 0.5m accuracy margin
 
         ## publishing the leader position setpoint
         # Check if all drones are within the positional accuracy margin of their target positions
         if self.offboard_setpoint_counter >= 100:
+            
             all_close = False
-            if self.position_change < len(Triangle_corner_positions) - 1:
+            if self.position_change <= len(Triangle_corner_positions) - 1:
                 all_close = True
                 for i, vehicle in enumerate(self.vehicles):
                     if i == 0:
@@ -295,9 +296,31 @@ class OffboardControl_MV(Node):
                     if dist > positional_accuracy_margin:
                         all_close = False
 
+            else:
+            ### make all drones return to their original positions
+                for i, vehicle in enumerate(self.vehicles):
+                    all_close = True
+                    self.publish_position_setpoint(vehicle, 0.0, 0.0, self.takeoff_height)
+                    current_x = vehicle.vehicle_local_position.x
+                    current_y = vehicle.vehicle_local_position.y
+                    dist = np.sqrt(current_x ** 2 + current_y ** 2)
+                    print(f"distance for drone [{i}]: {dist}")
+                    if dist < positional_accuracy_margin:
+                        self.get_logger().info(f"[{vehicle.namespace}] Drone is within positional accuracy margin. Hovering at position: {[0.0, 0.0, self.takeoff_height]}")
+                        self.get_logger().info(f"[{vehicle.namespace}] hover counter: {self.all_close_counter}")
+                        if self.all_close_counter > 25:  # 5 seconds at 10Hz
+                            self.get_logger().info(f"[{vehicle.namespace}] Landing initiated")
+                            self.land(vehicle)
+                            vehicle.is_landing_triggered = True
+                            if vehicle.vehicle_local_position.z > -0.5:  # Within 0.5m of ground (NED frame)
+                                self.get_logger().info("Landed successfully")
+                                self.disarm(vehicle)
+                    else:
+                        all_close = False
+
             if all_close:
                 self.get_logger().info("All drones are close to their target positions.")
-                if self.all_close_counter < 50: # repeat the location check for 5 seconds
+                if self.all_close_counter < 50: # repeat the location check for 5 seconds at 10Hz
                     self.get_logger().info(f"All drones are close to their target positions. counter = [{self.all_close_counter}]")
                     self.all_close_counter += 1
                 else:
@@ -306,21 +329,7 @@ class OffboardControl_MV(Node):
                     self.position_change += 1
 
 
-            if self.position_change >= len(Triangle_corner_positions) - 1:
-                ### make all drones return to their original positions
-                for i, vehicle in enumerate(self.vehicles):
-                    self.publish_position_setpoint(vehicle, 0.0, 0.0, self.takeoff_height)
-                    current_x = vehicle.vehicle_local_position.x
-                    current_y = vehicle.vehicle_local_position.y
-                    dist = np.sqrt(current_x ** 2 + current_y ** 2)
-                    print(f"distance for drone [{i}]: {dist}")
-                    if dist < positional_accuracy_margin:
-                        self.get_logger().info(f"[{vehicle.namespace}] Landing initiated")
-                        self.land(vehicle)
-                        vehicle.is_landing_triggered = True
-                        if vehicle.vehicle_local_position.z > -0.5:  # Within 0.5m of ground (NED frame)
-                            self.get_logger().info("Landed successfully")
-                            self.disarm(vehicle)
+        
             
         if self.vehicles[0].is_disarmed and self.vehicles[1].is_disarmed:
             rclpy.shutdown()
