@@ -1,0 +1,21 @@
+<sdf version="1.6">
+  <model name="TU_Delft_logo">
+    <static>true</static>
+    <link name="link">
+      <visual name="visual">
+        <geometry>
+          <mesh>
+            <uri>model://TU_Delft_logo/TU_Delft_logo.dae</uri>
+          </mesh>
+        </geometry>
+        <!-- Option 1: Simple PBR material (recommended) -->
+        <material>
+          <ambient>0.0 0.18 0.38 1</ambient>  <!-- TU Delft blue (RGB: 0,46,98) -->
+          <diffuse>0.0 0.18 0.38 1</diffuse>
+          <specular>0.05 0.05 0.05 1</specular>  <!-- Matte finish -->
+          <emissive>0 0 0 1</emissive>  <!-- Non-glowing -->
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

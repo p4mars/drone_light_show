@@ -15,3 +15,5 @@ PX4-Autopilot/
 *.pyc
 __pycache__/
 .vscode/
+*.pyi
+/.vscode-server

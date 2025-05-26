@@ -1,5 +1,5 @@
 # Drone Light Show Set-up
-This README will show you how to set-up your environment so you have access to ROS2, Gazebo and PX4 along with creating your workspace. It will also show you how to run the simulation provided. 
+This README will show you how to set-up your environment so you have access to ROS2, Gazebo and PX4 along with creating your workspace for the single vehicle test example. It will also show you how to run the simulation provided. 
 
 For more information about the development of this simulation, please refer to our wiki. 
 
@@ -87,7 +87,7 @@ MicroXRCEAgent udp4 -p 8888
 2. In a new terminal, start a PX4-Gazebo simulation with the drone in the PX4-Autopilot directory (you might have to exit the ros2_ws directory by using "cd .." first).
 ```bash
 cd PX4-Autopilot
-make px4_sitl gz_x500
+PX4_GZ_WORLD=sim_world make px4_sitl gz_x500
 ```
 A new pop-up with Gazebo and the X-500 model should show. The agent and client are now running and they should connect.
 

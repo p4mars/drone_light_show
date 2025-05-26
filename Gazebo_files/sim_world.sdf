@@ -1,0 +1,142 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<sdf version="1.9">
+  <world name="sim_world">
+    <physics type="ode">
+      <max_step_size>0.004</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <real_time_update_rate>250</real_time_update_rate>
+    </physics>
+    <gravity>0 0 -9.8</gravity>
+    <magnetic_field>6e-06 2.3e-05 -4.2e-05</magnetic_field>
+    <atmosphere type="adiabatic"/>
+    <scene>
+      <grid>false</grid>
+      <ambient>0.05 0.05 0.1 1</ambient>  <!-- Dark blue ambient light (moonlight) -->
+      <background>0.01 0.01 0.03 1</background>  <!-- Near-black sky -->
+      <shadows>true</shadows>
+    </scene>
+    <include>
+      <uri>model://TU_Delft_logo</uri>
+      <pose>12.5 4.5 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>https://fuel.ignitionrobotics.org/1.0/OpenRobotics/models/Oak Tree</uri>
+      <name>Pine Tree_1</name>
+      <pose>15 -10 0 0 -0 0</pose>
+    </include>
+    <include>
+      <uri>https://fuel.ignitionrobotics.org/1.0/OpenRobotics/models/Oak Tree</uri>
+      <name>Pine Tree_2</name>
+      <pose>15 15 0 0 -0 0</pose>
+    </include>
+    <include>
+      <uri>https://fuel.ignitionrobotics.org/1.0/OpenRobotics/models/Oak Tree</uri>
+      <name>Pine Tree_behind1</name>
+      <pose>18.5 -0.5 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>https://fuel.ignitionrobotics.org/1.0/OpenRobotics/models/Oak Tree</uri>
+      <name>Pine Tree_behind2</name>
+      <pose>18.5 -5 0 0 0 0</pose>
+    </include>
+        <include>
+      <uri>https://fuel.ignitionrobotics.org/1.0/OpenRobotics/models/Oak Tree</uri>
+      <name>Pine Tree_behind3</name>
+      <pose>18.5 10 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>https://fuel.ignitionrobotics.org/1.0/OpenRobotics/models/Oak Tree</uri>
+      <name>Pine Tree_behind4</name>
+      <pose>18.5 7.5 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>https://fuel.ignitionrobotics.org/1.0/OpenRobotics/models/Oak Tree</uri>
+      <name>Pine Tree_left1</name>
+      <pose>10 15 0 0 -0 0</pose>
+    </include>
+    <include>
+      <uri>https://fuel.ignitionrobotics.org/1.0/OpenRobotics/models/Oak Tree</uri>
+      <name>Pine Tree_behindright1</name>
+      <pose>5 -13 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>https://fuel.ignitionrobotics.org/1.0/OpenRobotics/models/Oak Tree</uri>
+      <name>Pine Tree_left2</name>
+      <pose>5 15 0 0 -0 0</pose>
+    </include>
+    <include>
+      <uri>https://fuel.ignitionrobotics.org/1.0/OpenRobotics/models/Oak Tree</uri>
+      <name>Pine Tree_behindright2</name>
+      <pose>5 -10 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>https://fuel.ignitionrobotics.org/1.0/OpenRobotics/models/Oak Tree</uri>
+      <name>Pine Tree_left3</name>
+      <pose>0 15 0 0 -0 0</pose>
+    </include>
+    <include>
+      <uri>https://fuel.ignitionrobotics.org/1.0/OpenRobotics/models/Oak Tree</uri>
+      <name>Pine Tree_behindright3</name>
+      <pose>0 -10 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>https://fuel.ignitionrobotics.org/1.0/OpenRobotics/models/Oak Tree</uri>
+      <name>Pine Tree_left4</name>
+      <pose>-5 15 0 0 -0 0</pose>
+    </include>
+    <include>
+      <uri>https://fuel.ignitionrobotics.org/1.0/OpenRobotics/models/Oak Tree</uri>
+      <name>Pine Tree_behindright4</name>
+      <pose>-5 -10 0 0 0 0</pose>
+    </include>
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>1 1</size>
+            </plane>
+          </geometry>
+          <surface>
+            <friction>
+              <ode/>
+            </friction>
+            <bounce/>
+            <contact/>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>500 500</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.08 0.1 0.07 1</ambient>
+            <diffuse>0.18 0.15 0.1 1</diffuse>  <!-- Earthy tone -->
+            <specular>0.01 0.01 0.01 1</specular>
+          </material>
+        </visual>
+        <pose>0 0 0 0 0 0</pose>
+      </link>
+    </model>
+    <light name="sunUTC" type="directional">
+      <pose>0 0 500 0 -0 0</pose>
+      <cast_shadows>true</cast_shadows>
+      <intensity>0.5</intensity>  <!-- Reduced to simulate moonlight -->
+      <direction>0.001 0.625 -0.78</direction>
+      <diffuse>0.3 0.3 0.4 1</diffuse>  <!-- Cool blue moonlight -->
+      <specular>0.05 0.05 0.1 1</specular>
+    </light>
+    <spherical_coordinates>
+      <surface_model>EARTH_WGS84</surface_model>
+      <world_frame_orientation>ENU</world_frame_orientation>
+      <latitude_deg>47.397971057728974</latitude_deg>
+      <longitude_deg>8.546163739800146</longitude_deg>
+      <elevation>0</elevation>
+    </spherical_coordinates>
+  </world>
+</sdf>
