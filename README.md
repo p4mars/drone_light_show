@@ -87,7 +87,7 @@ MicroXRCEAgent udp4 -p 8888
 2. In a new terminal, start a PX4-Gazebo simulation with the drone in the PX4-Autopilot directory (you might have to exit the ros2_ws directory by using "cd .." first).
 ```bash
 cd PX4-Autopilot
-make px4_sitl gz_x500
+PX4_GZ_WORLD=sim_world make px4_sitl gz_x500
 ```
 A new pop-up with Gazebo and the X-500 model should show. The agent and client are now running and they should connect.
 

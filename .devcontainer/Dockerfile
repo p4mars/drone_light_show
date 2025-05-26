@@ -144,6 +144,9 @@ RUN bash ./Tools/setup/ubuntu.sh
 # Build PX4 SITL
 RUN make px4_sitl
 
+RUN ln -s /home/ros/ros2_ws/Gazebo_files/sim_world.sdf /home/ros/PX4-Autopilot/Tools/simulation/gz/worlds/ && \
+    ln -s /home/ros/ros2_ws/Gazebo_files/TU_Delft_logo /home/ros/PX4-Autopilot/Tools/simulation/gz/models/
+
 # Setup entrypoint
 ENTRYPOINT ["/ros_entrypoint.sh"]
 CMD ["/bin/bash"]
