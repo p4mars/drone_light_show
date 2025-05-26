@@ -144,6 +144,12 @@ RUN bash ./Tools/setup/ubuntu.sh
 # Build PX4 SITL
 RUN make px4_sitl
 
+# Copy patch into the container
+COPY patches/patch_change.patch /tmp/patch_change.patch
+
+# Apply the patch inside the PX4 folder (mounted externally or copied in)
+RUN cd /home/ros/PX4-Autopilot && patch -p1 < /tmp/patch_change.patch
+
 # Setup entrypoint
 ENTRYPOINT ["/ros_entrypoint.sh"]
 CMD ["/bin/bash"]

@@ -7,6 +7,8 @@ log/
 you cloned these, don't push them)
 src/px4_msgs/
 src/px4_ros_com/
+PX4-Autopilot/
+
 
 # Ignore system/editor files
 *.swp
