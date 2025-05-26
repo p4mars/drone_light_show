@@ -13,3 +13,5 @@ src/px4_ros_com/
 *.pyc
 __pycache__/
 .vscode/
+*.pyi
+/.vscode-server
