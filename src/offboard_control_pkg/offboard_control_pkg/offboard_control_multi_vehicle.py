@@ -271,7 +271,7 @@ class OffboardControl_MV(Node):
         ## ---------------------------------------------------
         Triangle_corner_positions = [[3.0,0.0,2.0], [1.5,2.6,2.0], [0.0,0.0,2.0], [3.0,0.0,2.0], [1.5,2.6,2.0]] # an equilateral triangle example in the leader frame
         
-        positional_accuracy_margin = 0.2 # 0.5m accuracy margin
+        positional_accuracy_margin = 0.2 # 0.2m accuracy margin
 
         ## publishing the leader position setpoint
         # Check if all drones are within the positional accuracy margin of their target positions
