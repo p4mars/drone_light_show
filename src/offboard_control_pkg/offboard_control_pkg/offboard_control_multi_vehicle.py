@@ -291,7 +291,7 @@ class OffboardControl_MV(Node):
                         # make the second drone fly the point in front of the leader drone
                         idx = self.position_change + i
                         #print(f"idx: {idx}", "i-1: ", i-1)
-                        print(f"coordinate_transform[0]: {vehicle.coordinate_transform}")
+                        #print(f"coordinate_transform[0]: {vehicle.coordinate_transform}")
                         target_x = Triangle_corner_positions[idx][0] - vehicle.coordinate_transform[0]
                         target_y = Triangle_corner_positions[idx][1] - vehicle.coordinate_transform[1]
                     current_x = vehicle.vehicle_local_position.x
@@ -325,14 +325,15 @@ class OffboardControl_MV(Node):
                         all_close = False
 
             if all_close:
-                self.get_logger().info("All drones are close to their target positions.")
+                #self.get_logger().info("All drones are close to their target positions.")
                 if self.all_close_counter < 25: # repeat the location check for 2.5 seconds at 10Hz
                     self.get_logger().info(f"All drones are close to their target positions. counter = [{self.all_close_counter}]")
                     self.all_close_counter += 1
                 else:
+                    self.position_change += 1
                     self.get_logger().info(f"All drones are close to their target positions. Moving to next position. Changes: {self.position_change}")
                     self.all_close_counter = 0
-                    self.position_change += 1
+                    
 
 
         
