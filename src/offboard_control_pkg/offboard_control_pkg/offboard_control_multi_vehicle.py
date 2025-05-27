@@ -292,8 +292,8 @@ class OffboardControl_MV(Node):
                         idx = self.position_change + i
                         #print(f"idx: {idx}", "i-1: ", i-1)
                         print(f"coordinate_transform[0]: {vehicle.coordinate_transform}")
-                        target_x = Triangle_corner_positions[idx][0] - vehicle.coordinate_transform[1]
-                        target_y = Triangle_corner_positions[idx][1] - vehicle.coordinate_transform[0]
+                        target_x = Triangle_corner_positions[idx][0] - vehicle.coordinate_transform[0]
+                        target_y = Triangle_corner_positions[idx][1] - vehicle.coordinate_transform[1]
                     current_x = vehicle.vehicle_local_position.x
                     current_y = vehicle.vehicle_local_position.y
                     self.publish_position_setpoint(vehicle, target_x, target_y, self.takeoff_height)
@@ -314,7 +314,7 @@ class OffboardControl_MV(Node):
                     if dist < positional_accuracy_margin:
                         self.get_logger().info(f"[{vehicle.namespace}] Drone is within positional accuracy margin. Hovering at position: {[0.0, 0.0, self.takeoff_height]}")
                         self.get_logger().info(f"[{vehicle.namespace}] hover counter: {self.all_close_counter}")
-                        if self.all_close_counter > 25:  # 5 seconds at 10Hz
+                        if self.all_close_counter > 20:  # 2 seconds at 10Hz
                             self.get_logger().info(f"[{vehicle.namespace}] Landing initiated")
                             self.land(vehicle)
                             vehicle.is_landing_triggered = True
