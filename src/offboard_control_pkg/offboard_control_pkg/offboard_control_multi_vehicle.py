@@ -83,7 +83,7 @@ class OffboardControl_MV(Node):
         # Initialise variables
         self.offboard_setpoint_counter = 0 # To count time passed
         self.takeoff_height = -2.0 # positive downward!
-        self.radius = 1.0
+        #self.radius = 1.0
          # Add to __init__
 
         # Create a timer to publish control commands
@@ -182,10 +182,12 @@ class OffboardControl_MV(Node):
             # (accurate to a magnitude of cm)
             latitude = np.deg2rad(latitude)
             longitude = np.deg2rad(longitude)
+            # COnversion according to the WGS84 ellipsoid model
+            # https://en.wikipedia.org/wiki/Geographic_coordinate_system#Latitude_and_longitude
             m_latitude_per_deg = 111132.92 - 559.82*np.cos(2*latitude) + 1.175*np.cos(4*latitude) - 0.0023*np.cos(6*latitude)
             m_longitude_per_deg = 111412.84*np.cos(latitude) - 93.5*np.cos(3*latitude) + 0.118*np.cos(5*latitude)
-            m_latitude = latitude * m_latitude_per_deg
-            m_longitude = longitude * m_longitude_per_deg
+            m_latitude = np.rad2deg(latitude) * m_latitude_per_deg
+            m_longitude = np.rad2deg(longitude) * m_longitude_per_deg
             return m_latitude, m_longitude
 
         leader_latitude, leader_longitude = convert_coordinate_to_meters(leader_latitude_origin, leader_longitude_origin) 
@@ -195,8 +197,8 @@ class OffboardControl_MV(Node):
         origin_delta_latitude = follower_latitude - leader_latitude
         origin_delta_longitude = follower_longitude - leader_longitude
         #delta_altitude = follower_altitude - Leader_altitude
-        self.get_logger().info(f"coordinate transform for follower {follower_number}: {[origin_delta_longitude, origin_delta_latitude]}") #, delta_altitude]}")
-        self.vehicles[follower_number].coordinate_transform = [origin_delta_longitude, origin_delta_latitude] #, delta_altitude]
+        self.get_logger().info(f"coordinate transform for follower {follower_number}: {[origin_delta_latitude, origin_delta_longitude]}") #, delta_altitude]}")
+        self.vehicles[follower_number].coordinate_transform = [origin_delta_latitude, origin_delta_longitude] #, delta_altitude]
 
         
     # CONTROL LOOP
@@ -269,7 +271,8 @@ class OffboardControl_MV(Node):
         ## ---------------------------------------------------
         ## PHASE 2.1: Frame transform example
         ## ---------------------------------------------------
-        Triangle_corner_positions = [[3.0,0.0,2.0], [1.5,2.6,2.0], [0.0,0.0,2.0], [3.0,0.0,2.0], [1.5,2.6,2.0]] # an equilateral triangle example in the leader frame
+        ##### Making a trajectory for an equilateral triangle in the leader frame
+        Triangle_corner_positions = [[-3.0,0.0,2.0], [0.0,5.196,2.0], [3.0,0.0,2.0], [-3.0,0.0,2.0], [0.0,5.196,2.0], [3.0,0.0,2.0], [-3.0,0.0,2.0], [0.0,5.196,2.0]] # an equilateral triangle example in the leader frame
         
         positional_accuracy_margin = 0.2 # 0.2m accuracy margin
 
@@ -285,12 +288,12 @@ class OffboardControl_MV(Node):
                         target_x = Triangle_corner_positions[self.position_change][0]
                         target_y = Triangle_corner_positions[self.position_change][1]
                     else:
-                        # Check bounds before accessing lists
+                        # make the second drone fly the point in front of the leader drone
                         idx = self.position_change + i
                         #print(f"idx: {idx}", "i-1: ", i-1)
-                        #print(f"coordinate_transforms[0]: {vehicle.coordinate_transform}")
-                        target_x = Triangle_corner_positions[idx][0] - vehicle.coordinate_transform[0]
-                        target_y = Triangle_corner_positions[idx][1] - vehicle.coordinate_transform[1]
+                        print(f"coordinate_transform[0]: {vehicle.coordinate_transform}")
+                        target_x = Triangle_corner_positions[idx][0] - vehicle.coordinate_transform[1]
+                        target_y = Triangle_corner_positions[idx][1] - vehicle.coordinate_transform[0]
                     current_x = vehicle.vehicle_local_position.x
                     current_y = vehicle.vehicle_local_position.y
                     self.publish_position_setpoint(vehicle, target_x, target_y, self.takeoff_height)
@@ -323,7 +326,7 @@ class OffboardControl_MV(Node):
 
             if all_close:
                 self.get_logger().info("All drones are close to their target positions.")
-                if self.all_close_counter < 50: # repeat the location check for 5 seconds at 10Hz
+                if self.all_close_counter < 25: # repeat the location check for 2.5 seconds at 10Hz
                     self.get_logger().info(f"All drones are close to their target positions. counter = [{self.all_close_counter}]")
                     self.all_close_counter += 1
                 else:
