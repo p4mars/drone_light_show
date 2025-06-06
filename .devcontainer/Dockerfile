@@ -53,6 +53,8 @@ RUN sudo apt-get update && sudo apt-get upgrade -y \
     && sudo apt-get autoremove -y \
     && sudo rm -rf /var/lib/apt/lists/*
 
+RUN sudo pip3 install py_trees
+
 # Install tools for linting
 RUN sudo pip3 install --no-cache \
     black==23.9.1 \

@@ -10,4 +10,9 @@ def generate_launch_description():
             executable='offboard_control_node',
             name='control',
             output='screen'),
+        Node(
+            package='offboard_control_pkg',
+            executable='Drone_One_Node',
+            name='control',
+            output='screen')
     ])
