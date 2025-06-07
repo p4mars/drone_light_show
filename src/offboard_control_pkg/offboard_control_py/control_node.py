@@ -29,8 +29,9 @@ class ControlNode(Node):
         #--------------------------------------------
         self.namespace = ['px4_1', 'px4_2', 'px4_3']
         self.drone_msg_classes = [Drone1Info, Drone2Info, Drone3Info]
+
         # Timer to tick the loop
-        self.timer = self.create_timer(0.1, self.control_loop)
+        self.timer = self.create_timer(0.1, self.info_publisher)
 
     def create_drone_msg(self, drone_index, matrix, seq_colours):
         MsgClass = self.drone_msg_classes[drone_index]
@@ -47,9 +48,23 @@ class ControlNode(Node):
             index = matrix[drone_index][1]
             msg.light_colour = seq_colours[index]
             msg.follower = self.namespace(index - 1)
-        return msg
 
-    def info_publisher(self, sequence, matrix):
+        # Publish the message to the corresponding drone topic
+        if drone_index == 0:
+            self.publisher_drone_1.publish(msg)
+            self.get_logger().info("Publishing to Drone 1")
+            
+        elif drone_index == 1:
+            self.publisher_drone_2.publish(msg)
+            self.get_logger().info("Publishing to Drone 2")
+
+        elif drone_index == 2:
+            self.publisher_drone_3.publish(msg)
+            self.get_logger().info("Publishing to Drone 3")
+
+        return 
+
+    def info_publisher(self, matrix):
         # Colours needed for the LED control
         ''' color_dict = {
                 "off": LEDControl.COLOR_OFF,
@@ -70,7 +85,7 @@ class ControlNode(Node):
             seq_colours = ['cyan', 'green', 'red']
 
         for i in range(3):
-            drone_msg = self.create_drone_msg(i, matrix, seq_colours)
+            self.create_drone_msg(i, matrix, seq_colours)
 
 def main(args=None):
     rclpy.init(args=args)
