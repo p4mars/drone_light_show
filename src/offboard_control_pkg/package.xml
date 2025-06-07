@@ -12,17 +12,17 @@
   <build_depend>rclpy</build_depend>
   <build_depend>px4_msgs</build_depend>
   <build_depend>numpy</build_depend>
+  <build_depend>offboard_control_interfaces</build_depend>
 
   <exec_depend>rclpy</exec_depend>
   <exec_depend>px4_msgs</exec_depend>
   <exec_depend>numpy</exec_depend>
+  <exec_depend>offboard_control_interfaces</exec_depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
   <test_depend>ament_pep257</test_depend>
   <test_depend>python3-pytest</test_depend>
-
-  <depend>offboard_control_interfaces</depend>
 
   <export>
     <build_type>ament_python</build_type>
