@@ -4,7 +4,7 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPo
 from px4_msgs.msg import \
     OffboardControlMode, TrajectorySetpoint, VehicleCommand, VehicleLocalPosition, \
           VehicleGlobalPosition, LEDControl
-from offboard_control_pkg.msg import Drone3Info
+from offboard_control_interfaces.msg import Drone3Info
 import numpy as np 
 
 class Drone_Three(Node):

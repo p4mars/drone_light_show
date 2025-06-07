@@ -4,12 +4,12 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPo
 from px4_msgs.msg import \
     OffboardControlMode, TrajectorySetpoint, VehicleCommand, VehicleLocalPosition, \
           VehicleGlobalPosition, LEDControl
-from offboard_control_pkg.msg import Drone1Info
+from offboard_control_interfaces.msg import Drone2Info
 import numpy as np 
 
-class Drone_One(Node):
+class Drone_Two(Node):
     def __init__(self) -> None:
-        super().__init__('Drone_One_Node')
+        super().__init__('Drone_Two_Node')
         self.leader = None #px4_2, px4_3
         self.follower_number = None
 
@@ -39,30 +39,30 @@ class Drone_One(Node):
         # Publishers
         #---------------------------------------
         self.light_control_publisher = self.create_publisher(
-            LEDControl, 'px4_1/fmu/in/led_control', qos_profile)
+            LEDControl, 'px4_2/fmu/in/led_control', qos_profile)
         self.offboard_control_mode_publisher = self.create_publisher(
-            OffboardControlMode, 'px4_1/fmu/in/offboard_control_mode', qos_profile)
+            OffboardControlMode, 'px4_2/fmu/in/offboard_control_mode', qos_profile)
         self.trajectory_setpoint_publisher = self.create_publisher(
-            TrajectorySetpoint, 'px4_1/fmu/in/trajectory_setpoint', qos_profile)
+            TrajectorySetpoint, 'px4_2/fmu/in/trajectory_setpoint', qos_profile)
         self.vehicle_command_publisher = self.create_publisher(
-            VehicleCommand, 'px4_1/fmu/in/vehicle_command', qos_profile)
+            VehicleCommand, 'px4_2/fmu/in/vehicle_command', qos_profile)
 
         #---------------------------------------
         # Subscribers
         #---------------------------------------
         self.vehicle_local_position_subscriber = self.create_subscription(
-            VehicleLocalPosition, 'px4_1/fmu/out/vehicle_local_position',
+            VehicleLocalPosition, 'px4_2/fmu/out/vehicle_local_position',
             self.vehicle_local_position_callback, qos_profile)
         self.global_pos_subscriber = self.create_subscription(
-            VehicleGlobalPosition, 'px4_1/fmu/out/vehicle_global_position',
+            VehicleGlobalPosition, 'px4_2/fmu/out/vehicle_global_position',
             self.global_position_callback, qos_profile)
-        self.custom_subscriber = self.create_subscription(Drone1Info, 'drone_1_info', \
+        self.custom_subscriber = self.create_subscription(Drone2Info, 'drone_2_info', \
                                                           self.listener_callback, 10)
-
+        
         #---------------------------------------
         # State variables
         #---------------------------------------
-        self.custom_msg = Drone1Info()
+        self.custom_msg = Drone2Info()
         self.vehicle_local_position = VehicleLocalPosition()
         self.global_pos = VehicleGlobalPosition()
         self.coordinate_transform = []  
@@ -340,7 +340,7 @@ class Drone_One(Node):
 def main(args=None) -> None:
     print('Starting offboard control node...')
     rclpy.init(args=args)
-    offboard_control = Drone_One()
+    offboard_control = Drone_Two()
     rclpy.spin(offboard_control)
     offboard_control.destroy_node()
     rclpy.shutdown()

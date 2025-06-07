@@ -1,6 +1,7 @@
 import rclpy
 from rclpy.node import Node
-from offboard_control_pkg.msg import Drone1Info, Drone2Info, Drone3Info
+from offboard_control_interfaces.msg import Drone1Info, Drone2Info, Drone3Info
+
 import numpy as np
 
 class ControlNode(Node):
@@ -11,7 +12,8 @@ class ControlNode(Node):
         # FOR THE USER
         # MANUALLY SET THE FOLLOWER AND LEADER DRONES
         #--------------------------------------------
-        self.relationship_matrix = np.array([1, None, None], [2, 1, 1], [3, 2, 1])
+        # [Who is the leader, which follower, sequence number in the line]
+        self.relationship_matrix = np.array([None, None, 1], [1, 1, 2], [2, 1, 3])
         
         # self.relationship_matrix = np.array([1, None, None], [2, 1, 1], [3, 1, 2])
         #--------------------------------------------
@@ -34,19 +36,21 @@ class ControlNode(Node):
         self.timer = self.create_timer(0.1, self.info_publisher)
 
     def create_drone_msg(self, drone_index, matrix, seq_colours):
+
+        # Create the message for the drone 
         MsgClass = self.drone_msg_classes[drone_index]
         msg = MsgClass()
-        msg.follower_number = matrix[drone_index][2]
+        msg.follower_number = matrix[drone_index][1]
         
         # If the drone is a leader, it has no follower
-        if matrix[drone_index][1] is None:
+        if matrix[drone_index][0] is None:
             msg.follower = None
             msg.light_colour = seq_colours[0]
         
         # If the drone is a follower, assign its leader & colour
         else:
-            index = matrix[drone_index][1]
-            msg.light_colour = seq_colours[index]
+            index = matrix[drone_index][0]
+            msg.light_colour = seq_colours[matrix[drone_index][2]-1]
             msg.follower = self.namespace(index - 1)
 
         # Publish the message to the corresponding drone topic

@@ -7,7 +7,7 @@ def generate_launch_description():
     return LaunchDescription([
         Node(
             package='offboard_control_pkg',
-            executable='Control_Node',
+            executable='offboard_control_node',
             name='control',
             output='screen'),
         Node(
