@@ -6,22 +6,22 @@ import os
 def generate_launch_description():
     return LaunchDescription([
         Node(
-            package='offboard_control_py',
+            package='offboard_control_pkg',
             executable='Control_Node',
             name='control',
             output='screen'),
         Node(
-            package='offboard_control_py',
+            package='offboard_control_pkg',
             executable='Drone_One_Node',
             name='control',
             output='screen'),
         Node(
-            package='offboard_control_py',
+            package='offboard_control_pkg',
             executable='Drone_Two_Node',
             name='control',
             output='screen'),
         Node(
-            package='offboard_control_py',
+            package='offboard_control_pkg',
             executable='Drone_Three_Node',
             name='control',
             output='screen')

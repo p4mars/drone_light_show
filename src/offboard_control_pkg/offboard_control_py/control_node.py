@@ -53,7 +53,7 @@ class ControlNode(Node):
         if drone_index == 0:
             self.publisher_drone_1.publish(msg)
             self.get_logger().info("Publishing to Drone 1")
-            
+
         elif drone_index == 1:
             self.publisher_drone_2.publish(msg)
             self.get_logger().info("Publishing to Drone 2")
@@ -61,7 +61,6 @@ class ControlNode(Node):
         elif drone_index == 2:
             self.publisher_drone_3.publish(msg)
             self.get_logger().info("Publishing to Drone 3")
-
         return 
 
     def info_publisher(self, matrix):
