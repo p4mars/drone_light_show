@@ -312,7 +312,7 @@ class OffboardControl_MV(Node):
                     dist = np.sqrt(current_x ** 2 + current_y ** 2)
                     print(f"distance for drone [{i}]: {dist}")
                     if dist < positional_accuracy_margin:
-                        self.get_logger().info(f"[{vehicle.namespace}] Drone is within positional accuracy margin. Hovering at position: {[0.0, 0.0, self.takeoff_height]}")
+                        #self.get_logger().info(f"[{vehicle.namespace}] Drone is within positional accuracy margin. Hovering at position: {[0.0, 0.0, self.takeoff_height]}")
                         self.get_logger().info(f"[{vehicle.namespace}] hover counter: {self.all_close_counter}")
                         if self.all_close_counter > 20:  # 2 seconds at 10Hz
                             self.get_logger().info(f"[{vehicle.namespace}] Landing initiated")

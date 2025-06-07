@@ -24,7 +24,7 @@ class Drone_One(Node):
         )
 
         # Needed for frame transformation 
-        if self.leader is None:
+        if self.leader == 0:
             pass
         else:
             self.leader_gps = self.create_subscription(
@@ -255,7 +255,7 @@ class Drone_One(Node):
         ## ---------------------------------------------------
 
         if self.offboard_setpoint_counter == 1:
-            if self.leader is not None:
+            if self.leader != 0:
                     self.follower_frame_transform(self.leader, self.follower_number, self.dt)
             else:
                 pass
@@ -290,7 +290,7 @@ class Drone_One(Node):
         # CONCATENATE LISTS IF FOLLOWER 
         # ---------------------------------------------------
         # !!!!TO DO!!!!!
-        if self.leader is not None:
+        if self.leader != 0:
             positions = self.updated_trajectory(positions, self.follower_number, self.dt)
         else:
             pass
@@ -307,7 +307,7 @@ class Drone_One(Node):
                     self.position_change += 1
 
                 # Adding the offset if it is a follower drone 
-                if self.leader is not None:
+                if self.leader != 0:
                     offset_x = self.coordinate_transform[0] 
                     offset_y = self.coordinate_transform[1]
                 else:

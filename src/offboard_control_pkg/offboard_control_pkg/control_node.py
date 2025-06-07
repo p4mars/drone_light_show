@@ -13,7 +13,7 @@ class ControlNode(Node):
         # MANUALLY SET THE FOLLOWER AND LEADER DRONES
         #--------------------------------------------
         # [Who is the leader, which follower, sequence number in the line]
-        self.relationship_matrix = np.array([None, None, 1], [1, 1, 2], [2, 1, 3])
+        self.relationship_matrix = np.array([[0, 0, 1], [1, 1, 2], [2, 1, 3]])
         
         # self.relationship_matrix = np.array([1, None, None], [2, 1, 1], [3, 1, 2])
         #--------------------------------------------
@@ -30,28 +30,40 @@ class ControlNode(Node):
 
         #--------------------------------------------
         self.namespace = ['px4_1', 'px4_2', 'px4_3']
+
         self.drone_msg_classes = [Drone1Info, Drone2Info, Drone3Info]
 
         # Timer to tick the loop
         self.timer = self.create_timer(0.1, self.info_publisher)
+        
 
     def create_drone_msg(self, drone_index, matrix, seq_colours):
 
-        # Create the message for the drone 
-        MsgClass = self.drone_msg_classes[drone_index]
-        msg = MsgClass()
-        msg.follower_number = matrix[drone_index][1]
+        # Create the message for the drone
+        #### This has to bedone manually, since there is no other way (?) to dynamically instatiate the message classes
+        if drone_index == 0:
+            MsgClass = Drone1Info()
+        elif drone_index == 1:
+            MsgClass = Drone2Info()
+        elif drone_index == 2:
+            MsgClass = Drone3Info()
+
+        ### assign the instantiated message class to the universal variable
+        msg = MsgClass    
+
+        ### explicitly state the follower number as int in order to avoid an assertion error
+        msg.follower_number = int(matrix[drone_index][1])
         
         # If the drone is a leader, it has no follower
-        if matrix[drone_index][0] is None:
-            msg.follower = None
+        if matrix[drone_index][0] == 0:
+            msg.follower = "" ### Assign an empty value if the drone does not follow anything
             msg.light_colour = seq_colours[0]
         
         # If the drone is a follower, assign its leader & colour
         else:
             index = matrix[drone_index][0]
             msg.light_colour = seq_colours[matrix[drone_index][2]-1]
-            msg.follower = self.namespace(index - 1)
+            msg.follower = self.namespace[index - 1] # Adjust for zero-based index
 
         # Publish the message to the corresponding drone topic
         if drone_index == 0:
@@ -67,7 +79,7 @@ class ControlNode(Node):
             self.get_logger().info("Publishing to Drone 3")
         return 
 
-    def info_publisher(self, matrix):
+    def info_publisher(self):
         # Colours needed for the LED control
         ''' color_dict = {
                 "off": LEDControl.COLOR_OFF,
@@ -80,7 +92,8 @@ class ControlNode(Node):
                 "cyan": LEDControl.COLOR_CYAN,
                 "white": LEDControl.COLOR_WHITE,
             } '''
-
+        matrix = self.relationship_matrix
+        # Create a sequence of colours for the drone
         if matrix[0][2] != matrix[1][2] and matrix[0][2] != matrix[2][2] \
             and matrix[1][2] != matrix[2][2]:
             seq_colours = ['purple', 'amber', 'amber']
