@@ -23,7 +23,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'offboard_control_node = offboard_control_py.offboard_control_multi_vehicle:main',
+            'offboard_control_node = offboard_control_py.control_node:main',
             'Drone_One_Node = offboard_control_py.drone1:main',
             'Drone_Two_Node = offboard_control_py.drone2:main',
             'Drone_Three_Node = offboard_control_py.drone3:main',

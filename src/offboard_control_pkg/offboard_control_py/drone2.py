@@ -4,6 +4,7 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPo
 from px4_msgs.msg import \
     OffboardControlMode, TrajectorySetpoint, VehicleCommand, VehicleLocalPosition, \
           VehicleGlobalPosition, LEDControl
+from offboard_control_pkg.msg import Drone2Info
 import numpy as np 
 
 class Drone_Two(Node):
@@ -55,10 +56,13 @@ class Drone_Two(Node):
         self.global_pos_subscriber = self.create_subscription(
             VehicleGlobalPosition, 'px4_2/fmu/out/vehicle_global_position',
             self.global_position_callback, qos_profile)
-
+        self.custom_subscriber = self.create_subscription(Drone2Info, 'drone_2_info', \
+                                                          self.listener_callback, 10)
+        
         #---------------------------------------
         # State variables
         #---------------------------------------
+        self.custom_msg = Drone2Info()
         self.vehicle_local_position = VehicleLocalPosition()
         self.global_pos = VehicleGlobalPosition()
         self.coordinate_transform = []  
@@ -232,11 +236,10 @@ class Drone_Two(Node):
         # Subscribe to the TC topic to see if you have a follower 
         # -----------------------------------------
 
-        # Drone will get ['px4_number', 1 or 2, number lights]
-        self.leader = "px4_2"
-        self.follower_number = 1
+        self.leader = self.custom_msg.follower
+        self.follower_number = self.custom_msg.follower_number
+        colour = self.custom_msg.light_colour # light colour
         funct = "blink_slow" # light function
-        colour = "red" # light colour
 
         self.publish_offboard_control_heartbeat_signal()
         
