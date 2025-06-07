@@ -8,7 +8,6 @@ from px4_msgs.msg import \
 import numpy as np 
 
 class OffboardControl(Node):
-
     def __init__(self) -> None:
         super().__init__('offboard_control_node_OG')
 

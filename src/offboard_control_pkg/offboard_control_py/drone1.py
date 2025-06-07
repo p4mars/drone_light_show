@@ -77,7 +77,8 @@ class Drone_One(Node):
         #----------------------------------------
         # Create a timer to publish control commands (10Hz)
         #----------------------------------------
-        self.timer = self.create_timer(0.1, self.timer_callback)
+        self.dt = 0.1  # 10Hz
+        self.timer = self.create_timer(self.dt, self.timer_callback)
         
     def publish_vehicle_command(self, target, command, **params) -> None:
         msg = VehicleCommand()
@@ -151,7 +152,7 @@ class Drone_One(Node):
         msg.color = color_dict[colour]
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
         self.light_control_publisher.publish(msg)
-        self.get_logger().info(f"Light control command sent")
+        self.get_logger().info("Light control command sent")
 
     # Sending the messages to change into offboard mode
     # and to set the position setpoint
@@ -174,6 +175,7 @@ class Drone_One(Node):
         self.trajectory_setpoint_publisher.publish(msg)
         self.get_logger().info(f"Publishing position setpoints {[x, y, z]}")
 
+    # Calculating the position change in the local frame of the leader
     def follower_frame_transform(self):
         leader_latitude_origin = self.leader_vehicle_local_position.ref_lat
         leader_longitude_origin = self.leader_vehicle_local_position_subscriber.ref_lon
@@ -205,7 +207,23 @@ class Drone_One(Node):
         origin_delta_longitude = follower_longitude - leader_longitude
 
         self.get_logger().info(f"coordinate transform for follower: {[origin_delta_latitude, origin_delta_longitude]}") #, delta_altitude]}")
-        self.coordinate_transform = [origin_delta_latitude, origin_delta_longitude] 
+        
+        # x offset - longitude, y offset - latitude
+        self.coordinate_transform = [origin_delta_longitude, origin_delta_latitude] 
+
+    # Update the trajectory for the follower drone
+    def updated_trajectory(setpoints: list, follower_number: int, dt: float) -> list:
+        # THREE SECOND DELAY
+        extra_points = 3*follower_number/dt # 3 seconds of delay
+
+        # Add extra points to the front of the setpoints to create a delay
+        new_points = []
+        for i in np.arange(extra_points):
+            new_points.append([0.0, 0.0, 0.0])
+
+        # Concatenate the new points to the front of the setpoints
+        setpoints = new_points + setpoints
+        return setpoints
 
     # CONTROL LOOP
     def timer_callback(self) -> None:
@@ -213,11 +231,12 @@ class Drone_One(Node):
         # TO DO!!!!!!!
         # Subscribe to the TC topic to see if you have a follower 
         # -----------------------------------------
-        
-        funct = "blink_slow" # light function
-        colour = "red" # light colour
 
         # Drone will get ['px4_number', 1 or 2, number lights]
+        self.leader = "px4_2"
+        self.follower_number = 1
+        funct = "blink_slow" # light function
+        colour = "red" # light colour
 
         self.publish_offboard_control_heartbeat_signal()
         
@@ -232,7 +251,7 @@ class Drone_One(Node):
 
         if self.offboard_setpoint_counter == 1:
             if self.leader is not None:
-                    self.follower_frame_transform(self.leader)
+                    self.follower_frame_transform(self.leader, self.follower_number, self.dt)
             else:
                 pass
 
@@ -257,68 +276,57 @@ class Drone_One(Node):
         ## ---------------------------------------------------
         ## PHASE 2.1: Frame transform example
         ## ---------------------------------------------------
-        ##### Making a trajectory for an equilateral triangle in the leader frame
-        Triangle_corner_positions = [[-3.0,0.0,2.0], [0.0,5.196,2.0], [3.0,0.0,2.0], [-3.0,0.0,2.0], [0.0,5.196,2.0], [3.0,0.0,2.0], [-3.0,0.0,2.0], [0.0,5.196,2.0]] # an equilateral triangle example in the leader frame
+        # Trajectory for an equilateral triangle in the leader frame
+        positions = [[-3.0,0.0,2.0], [0.0,5.196,2.0], [3.0,0.0,2.0], [-3.0,0.0,2.0], [0.0,5.196,2.0], [3.0,0.0,2.0], [-3.0,0.0,2.0], [0.0,5.196,2.0]] # an equilateral triangle example in the leader frame
         
-        positional_accuracy_margin = 0.2 # 0.2m accuracy margin
+        margin = 0.2 # 0.2m accuracy margin
 
-        ## publishing the leader position setpoint
-        # Check if all drones are within the positional accuracy margin of their target positions
-        if self.offboard_setpoint_counter >= 100:
-            
-            all_close = False
-            if self.position_change < len(Triangle_corner_positions) - 1:
-                all_close = True
-                for i, vehicle in enumerate(self.vehicles):
-                    if i == 0:
-                        target_x = Triangle_corner_positions[self.position_change][0]
-                        target_y = Triangle_corner_positions[self.position_change][1]
-                    else:
-                        # make the second drone fly the point in front of the leader drone
-                        idx = self.position_change + i
-                        #print(f"idx: {idx}", "i-1: ", i-1)
-                        #print(f"coordinate_transform[0]: {vehicle.coordinate_transform}")
-                        target_x = Triangle_corner_positions[idx][0] - vehicle.coordinate_transform[0]
-                        target_y = Triangle_corner_positions[idx][1] - vehicle.coordinate_transform[1]
-                    current_x = vehicle.vehicle_local_position.x
-                    current_y = vehicle.vehicle_local_position.y
-                    self.publish_position_setpoint(vehicle, target_x, target_y, self.takeoff_height)
+        # ---------------------------------------------------
+        # CONCATENATE LISTS IF FOLLOWER 
+        # ---------------------------------------------------
+        # !!!!TO DO!!!!!
+        if self.leader is not None:
+            positions = self.updated_trajectory(positions, self.follower_number, self.dt)
+        else:
+            pass
 
-                    dist = np.sqrt((current_x - target_x) ** 2 + (current_y - target_y) ** 2)
-                    if dist > positional_accuracy_margin:
-                        all_close = False
-
-            else:
-            ### make all drones return to their original positions
-                for i, vehicle in enumerate(self.vehicles):
-                    all_close = True
-                    self.publish_position_setpoint(vehicle, 0.0, 0.0, self.takeoff_height)
-                    current_x = vehicle.vehicle_local_position.x
-                    current_y = vehicle.vehicle_local_position.y
-                    dist = np.sqrt(current_x ** 2 + current_y ** 2)
-                    print(f"distance for drone [{i}]: {dist}")
-                    if dist < positional_accuracy_margin:
-                        self.get_logger().info(f"[{vehicle.namespace}] Drone is within positional accuracy margin. Hovering at position: {[0.0, 0.0, self.takeoff_height]}")
-                        self.get_logger().info(f"[{vehicle.namespace}] hover counter: {self.all_close_counter}")
-                        if self.all_close_counter > 20:  # 2 seconds at 10Hz
-                            self.get_logger().info(f"[{vehicle.namespace}] Landing initiated")
-                            self.land(vehicle)
-                            vehicle.is_landing_triggered = True
-                            if vehicle.vehicle_local_position.z > -0.5:  # Within 0.5m of ground (NED frame)
-                                self.get_logger().info("Landed successfully")
-                                self.disarm(vehicle)
-                    else:
-                        all_close = False
-
-            if all_close:
-                #self.get_logger().info("All drones are close to their target positions.")
-                if self.all_close_counter < 25: # repeat the location check for 2.5 seconds at 10Hz
-                    self.get_logger().info(f"All drones are close to their target positions. counter = [{self.all_close_counter}]")
-                    self.all_close_counter += 1
-                else:
+        # Check if drone is within the positional accuracy margin of its target position
+        if self.offboard_setpoint_counter >= 100:        
+            if self.position_change < len(positions):    
+                target_x = positions[self.position_change][0]
+                target_y = positions[self.position_change][1]
+                
+                # Telling to move to the next position after the first has been reached
+                if self.vehicle_local_position.x - positions[self.position_change][0] < margin and \
+                        self.vehicle_local_position.y - positions[self.position_change][1] < margin:
                     self.position_change += 1
-                    self.get_logger().info(f"All drones are close to their target positions. Moving to next position. Changes: {self.position_change}")
-                    self.all_close_counter = 0
+
+                # Adding the offset if it is a follower drone 
+                if self.leader is not None:
+                    offset_x = self.coordinate_transform[0] 
+                    offset_y = self.coordinate_transform[1]
+                else:
+                    offset_x = 0.0
+                    offset_y = 0.0
+
+                # Publishing ! :D
+                self.publish_position_setpoint(target_x+offset_x, target_y+offset_y, self.takeoff_height)
+            
+            # Beginning landing sequence after all positions have been reached
+            else:
+                self.publish_position_setpoint(0.0, 0.0, self.takeoff_height)
+                current_x = self.vehicle_local_position.x
+                current_y = self.vehicle_local_position.y
+                dist = np.sqrt(current_x ** 2 + current_y ** 2)
+
+                # Landing and disarming 
+                if dist < margin:
+                    self.land()
+                    self.is_landing_triggered = True
+                    if self.vehicle_local_position.z > -0.5:  # Within 0.5m of ground (NED frame)
+                        self.get_logger().info("Landed successfully")
+                        self.is_disarmed = True
+                        self.disarm()
 
         if self.is_disarmed:
             rclpy.shutdown()

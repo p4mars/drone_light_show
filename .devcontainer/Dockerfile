@@ -22,7 +22,7 @@ USER $ROS_USER
 RUN mkdir -p /home/ros/ros2_ws/src
 
 ###########################################
-
+    
 FROM ros_user_setup AS dev
 
 # Install some dependencies packages
