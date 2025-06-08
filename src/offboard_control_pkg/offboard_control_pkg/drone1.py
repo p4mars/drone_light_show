@@ -3,7 +3,7 @@ from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
 from px4_msgs.msg import \
     OffboardControlMode, TrajectorySetpoint, VehicleCommand, VehicleLocalPosition, \
-          VehicleGlobalPosition, LEDControl
+          VehicleGlobalPosition, LedControl, VehicleStatus
 from offboard_control_interfaces.msg import Drone1Info
 
 
@@ -12,6 +12,8 @@ import numpy as np
 class Drone_One(Node):
     def __init__(self) -> None:
         super().__init__('Drone_One_Node')
+
+
         self.leader = None #px4_2, px4_3
         self.follower_number = None
 
@@ -29,7 +31,7 @@ class Drone_One(Node):
         # Publishers
         #---------------------------------------
         self.light_control_publisher = self.create_publisher(
-            LEDControl, 'px4_1/fmu/in/led_control', qos_profile)
+            LedControl, 'px4_1/fmu/in/led_control', qos_profile)
         self.offboard_control_mode_publisher = self.create_publisher(
             OffboardControlMode, 'px4_1/fmu/in/offboard_control_mode', qos_profile)
         self.trajectory_setpoint_publisher = self.create_publisher(
@@ -46,6 +48,11 @@ class Drone_One(Node):
         self.global_pos_subscriber = self.create_subscription(
             VehicleGlobalPosition, 'px4_1/fmu/out/vehicle_global_position',
             self.global_position_callback, qos_profile)
+        
+        self.vehicle_status_subscriber = self.create_subscription(
+            VehicleStatus, 'px4_1/fmu/out/vehicle_status',
+            self.vehicle_status_callback, qos_profile)
+        
         self.custom_subscriber = self.create_subscription(Drone1Info, 'drone1_info_topic', \
                                                           self.listener_callback, qos_profile)
 
@@ -53,7 +60,9 @@ class Drone_One(Node):
         # State variables
         #---------------------------------------
         self.custom_msg = Drone1Info()
+        self.vehicle_status = VehicleStatus()
         self.vehicle_local_position = VehicleLocalPosition()
+        self.leader_vehicle_local_position = self.vehicle_local_position # Placeholder for leader's local position i fneeded
         self.global_pos = VehicleGlobalPosition()
         self.coordinate_transform = []  
         self.is_landing_triggered = False 
@@ -94,53 +103,93 @@ class Drone_One(Node):
 
     #Arming the vehicle by sending the command
     def arm(self):
-        self.publish_vehicle_command(
+        self.publish_vehicle_command(self.vehicle_status.system_id,
             VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=1.0)
         self.get_logger().info('Arm command sent')
 
     # Disarming the vehicle by sending the command
     def disarm(self):
-        self.publish_vehicle_command(
+        self.publish_vehicle_command(self.vehicle_status.system_id,
             VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=0.0)
         self.get_logger().info('Disarm command sent')
 
     # Offboard mode vehicle command
     def engage_offboard_mode(self):
-        self.publish_vehicle_command(
+        self.publish_vehicle_command(self.vehicle_status.system_id,
             VehicleCommand.VEHICLE_CMD_DO_SET_MODE, param1=1.0, param2=6.0)
         self.get_logger().info("Switching to offboard mode")
 
     # Landing vehicle command
     def land(self):
-        self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_LAND)
+        self.publish_vehicle_command(self.vehicle_status.system_id,VehicleCommand.VEHICLE_CMD_NAV_LAND)
         self.get_logger().info("Switching to land mode")
 
+    ####################################################
+    #### Callback functions for the custom subscribers
+    def vehicle_local_position_callback(self, msg):
+        self.vehicle_local_position = msg
+
+    def global_position_callback(self, msg):
+        self.global_pos = msg
+
+    def vehicle_status_callback(self, msg):
+        self.vehicle_status = msg
+
+    def listener_callback(self, msg):
+        qos_profile = QoSProfile(
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=10
+        )
+        
+        """Handle incoming custom messages"""
+        self.custom_msg = msg
+        self.leader = msg.follower
+        self.follower_number = msg.follower_number 
+        self.custom_msg.light_colour = msg.light_colour # light colour
+        self.get_logger().info(f"Received message: leader={self.leader}, color={msg.light_colour}")
+
+        # Needed for frame transformation 
+        if self.leader == "":
+            pass
+        else:
+            self.leader_gps = self.create_subscription(
+            VehicleGlobalPosition, f'{self.follower}/fmu/out/vehicle_global_position',
+            self.global_position_callback, qos_profile)
+
+            self.leader_vehicle_local_position_subscriber = self.create_subscription(
+            VehicleLocalPosition, f'{self.follower}/fmu/out/vehicle_local_position',
+            self.vehicle_local_position_callback, qos_profile)
+
+            self.leader_vehicle_local_position = VehicleLocalPosition()    
+    ####################################################    
     # Light control command 
     def light_control(self, funct: str, colour: str, num_blinks: int = 5, priority: int = 2):
         mode_dict = {
-        "off": LEDControl.MODE_OFF,
-        "on": LEDControl.MODE_ON,
-        "disabled": LEDControl.MODE_DISABLED,
-        "blink_slow": LEDControl.MODE_BLINK_SLOW,
-        "blink_normal": LEDControl.MODE_BLINK_NORMAL,
-        "blink_fast": LEDControl.MODE_BLINK_FAST,
-        "breathe": LEDControl.MODE_BREATHE,
-        "flash": LEDControl.MODE_FLASH,
+        "off": LedControl.MODE_OFF,
+        "on": LedControl.MODE_ON,
+        "disabled": LedControl.MODE_DISABLED,
+        "blink_slow": LedControl.MODE_BLINK_SLOW,
+        "blink_normal": LedControl.MODE_BLINK_NORMAL,
+        "blink_fast": LedControl.MODE_BLINK_FAST,
+        "breathe": LedControl.MODE_BREATHE,
+        "flash": LedControl.MODE_FLASH,
         }
 
         color_dict = {
-            "off": LEDControl.COLOR_OFF,
-            "red": LEDControl.COLOR_RED,
-            "green": LEDControl.COLOR_GREEN,
-            "blue": LEDControl.COLOR_BLUE,
-            "yellow": LEDControl.COLOR_YELLOW,
-            "purple": LEDControl.COLOR_PURPLE,
-            "amber": LEDControl.COLOR_AMBER,
-            "cyan": LEDControl.COLOR_CYAN,
-            "white": LEDControl.COLOR_WHITE,
+            "off": LedControl.COLOR_OFF,
+            "red": LedControl.COLOR_RED,
+            "green": LedControl.COLOR_GREEN,
+            "blue": LedControl.COLOR_BLUE,
+            "yellow": LedControl.COLOR_YELLOW,
+            "purple": LedControl.COLOR_PURPLE,
+            "amber": LedControl.COLOR_AMBER,
+            "cyan": LedControl.COLOR_CYAN,
+            "white": LedControl.COLOR_WHITE,
         }
 
-        msg = LEDControl()
+        msg = LedControl()
         msg.led_mask = 0xff # All LEDs
         msg.mode = mode_dict[funct]
         msg.color = color_dict[colour]
@@ -219,33 +268,7 @@ class Drone_One(Node):
         setpoints = new_points + setpoints
         return setpoints
     
-    def listener_callback(self, msg):
-        qos_profile = QoSProfile(
-            reliability=ReliabilityPolicy.BEST_EFFORT,
-            durability=DurabilityPolicy.TRANSIENT_LOCAL,
-            history=HistoryPolicy.KEEP_LAST,
-            depth=10
-        )
-        
-        """Handle incoming custom messages"""
-        self.custom_msg = msg
-        self.leader = msg.follower
-        self.follower_number = msg.follower_number
-        self.get_logger().info(f"Received message: leader={self.leader}, color={msg.light_colour}")
-
-        # Needed for frame transformation 
-        if self.leader == "":
-            pass
-        else:
-            self.leader_gps = self.create_subscription(
-            VehicleGlobalPosition, f'{self.follower}/fmu/out/vehicle_global_position',
-            self.global_position_callback, qos_profile)
-
-            self.leader_vehicle_local_position_subscriber = self.create_subscription(
-            VehicleLocalPosition, f'{self.follower}/fmu/out/vehicle_local_position',
-            self.vehicle_local_position_callback, qos_profile)
-
-            self.leader_vehicle_local_position = VehicleLocalPosition()
+    
 
     # CONTROL LOOP
     def timer_callback(self) -> None:
@@ -255,10 +278,11 @@ class Drone_One(Node):
         # -----------------------------------------
         #self.get_logger().info(f"Received message: leader={self.leader}, color={msg.light_colour}")
 
-
         self.leader = self.custom_msg.follower
         self.follower_number = self.custom_msg.follower_number
         colour = self.custom_msg.light_colour # light colour
+        print(f"Leader: {self.leader}, Follower number: {self.follower_number}, Colour: {colour}")
+        print(self.custom_msg.light_colour)
         funct = "blink_slow" # light function
 
         self.publish_offboard_control_heartbeat_signal()
@@ -273,8 +297,8 @@ class Drone_One(Node):
         ## ---------------------------------------------------
 
         if self.offboard_setpoint_counter == 1:
-            if self.leader != 0:
-                    self.follower_frame_transform(self.leader, self.follower_number, self.dt)
+            if self.leader != None:
+                    self.follower_frame_transform()
             else:
                 pass
 
@@ -308,7 +332,7 @@ class Drone_One(Node):
         # CONCATENATE LISTS IF FOLLOWER 
         # ---------------------------------------------------
         # !!!!TO DO!!!!!
-        if self.leader != 0:
+        if self.leader != "":
             positions = self.updated_trajectory(positions, self.follower_number, self.dt)
         else:
             pass
@@ -325,7 +349,7 @@ class Drone_One(Node):
                     self.position_change += 1
 
                 # Adding the offset if it is a follower drone 
-                if self.leader != 0:
+                if self.leader != "":
                     offset_x = self.coordinate_transform[0] 
                     offset_y = self.coordinate_transform[1]
                 else:
@@ -369,4 +393,4 @@ if __name__ == '__main__':
     try:
         main()
     except Exception as e:
-        print(e)
+        print(f"Exception occured in Drone_One Node: {e}")

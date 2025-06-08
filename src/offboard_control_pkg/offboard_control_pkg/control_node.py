@@ -1,5 +1,6 @@
 import rclpy
 from rclpy.node import Node
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
 from offboard_control_interfaces.msg import Drone1Info, Drone2Info, Drone3Info
 
 import numpy as np
@@ -7,6 +8,12 @@ import numpy as np
 class ControlNode(Node):
     def __init__(self):
         super().__init__('Control_Node')
+        qos_profile = QoSProfile(
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=10
+        )
         
         #--------------------------------------------
         # FOR THE USER
@@ -20,13 +27,13 @@ class ControlNode(Node):
         # PUBLISHERS 
 
         # DRONE 1 /px4_1
-        self.publisher_drone_1 = self.create_publisher(Drone1Info, 'drone1_info_topic', 10)
+        self.publisher_drone_1 = self.create_publisher(Drone1Info, 'drone1_info_topic', qos_profile)
 
         # DRONE 2 /px4_2
-        self.publisher_drone_2 = self.create_publisher(Drone2Info, 'drone2_info_topic', 10)
+        self.publisher_drone_2 = self.create_publisher(Drone2Info, 'drone2_info_topic', qos_profile)
 
         # DRONE 3 /px4_3
-        self.publisher_drone_3 = self.create_publisher(Drone3Info, 'drone3_info_topic', 10)
+        self.publisher_drone_3 = self.create_publisher(Drone3Info, 'drone3_info_topic', qos_profile)
 
         #--------------------------------------------
         self.namespace = ['px4_1', 'px4_2', 'px4_3']

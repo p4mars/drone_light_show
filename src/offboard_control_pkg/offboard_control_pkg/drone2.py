@@ -3,7 +3,7 @@ from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
 from px4_msgs.msg import \
     OffboardControlMode, TrajectorySetpoint, VehicleCommand, VehicleLocalPosition, \
-          VehicleGlobalPosition, LEDControl
+          VehicleGlobalPosition, LedControl
 from offboard_control_interfaces.msg import Drone2Info
 import numpy as np 
 
@@ -40,7 +40,7 @@ class Drone_Two(Node):
         # Publishers
         #---------------------------------------
         self.light_control_publisher = self.create_publisher(
-            LEDControl, 'px4_2/fmu/in/led_control', qos_profile)
+            LedControl, 'px4_2/fmu/in/led_control', qos_profile)
         self.offboard_control_mode_publisher = self.create_publisher(
             OffboardControlMode, 'px4_2/fmu/in/offboard_control_mode', qos_profile)
         self.trajectory_setpoint_publisher = self.create_publisher(
@@ -126,32 +126,40 @@ class Drone_Two(Node):
         self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_LAND)
         self.get_logger().info("Switching to land mode")
 
+    #### Callback functions for the custom subscribers
+    def vehicle_local_position_callback(self, msg):
+        self.vehicle_local_position = msg
+
+    def global_position_callback(self, msg):
+        self.global_pos = msg
+
+
     # Light control command 
     def light_control(self, funct: str, colour: str, num_blinks: int = 0, priority: int = 2):
         mode_dict = {
-        "off": LEDControl.MODE_OFF,
-        "on": LEDControl.MODE_ON,
-        "disabled": LEDControl.MODE_DISABLED,
-        "blink_slow": LEDControl.MODE_BLINK_SLOW,
-        "blink_normal": LEDControl.MODE_BLINK_NORMAL,
-        "blink_fast": LEDControl.MODE_BLINK_FAST,
-        "breathe": LEDControl.MODE_BREATHE,
-        "flash": LEDControl.MODE_FLASH,
+        "off": LedControl.MODE_OFF,
+        "on": LedControl.MODE_ON,
+        "disabled": LedControl.MODE_DISABLED,
+        "blink_slow": LedControl.MODE_BLINK_SLOW,
+        "blink_normal": LedControl.MODE_BLINK_NORMAL,
+        "blink_fast": LedControl.MODE_BLINK_FAST,
+        "breathe": LedControl.MODE_BREATHE,
+        "flash": LedControl.MODE_FLASH,
         }
 
         color_dict = {
-            "off": LEDControl.COLOR_OFF,
-            "red": LEDControl.COLOR_RED,
-            "green": LEDControl.COLOR_GREEN,
-            "blue": LEDControl.COLOR_BLUE,
-            "yellow": LEDControl.COLOR_YELLOW,
-            "purple": LEDControl.COLOR_PURPLE,
-            "amber": LEDControl.COLOR_AMBER,
-            "cyan": LEDControl.COLOR_CYAN,
-            "white": LEDControl.COLOR_WHITE,
+            "off": LedControl.COLOR_OFF,
+            "red": LedControl.COLOR_RED,
+            "green": LedControl.COLOR_GREEN,
+            "blue": LedControl.COLOR_BLUE,
+            "yellow": LedControl.COLOR_YELLOW,
+            "purple": LedControl.COLOR_PURPLE,
+            "amber": LedControl.COLOR_AMBER,
+            "cyan": LedControl.COLOR_CYAN,
+            "white": LedControl.COLOR_WHITE,
         }
 
-        msg = LEDControl()
+        msg = LedControl()
         msg.led_mask = 0xff # All LEDs
         msg.mode = mode_dict[funct]
         msg.color = color_dict[colour]
@@ -359,4 +367,4 @@ if __name__ == '__main__':
     try:
         main()
     except Exception as e:
-        print(e)
+        print(f"Exception occured in Drone_Two_Node: {e}")
