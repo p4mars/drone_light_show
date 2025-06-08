@@ -382,15 +382,20 @@ class Drone_One(Node):
         self.offboard_setpoint_counter += 1
                 
 def main(args=None) -> None:
-    print('Starting offboard control node...')
-    rclpy.init(args=args)
-    offboard_control = Drone_One()
-    rclpy.spin(offboard_control)
-    offboard_control.destroy_node()
-    rclpy.shutdown()
-
-if __name__ == '__main__':
     try:
-        main()
+        
+        print('Starting offboard control node...')
+        rclpy.init(args=args)
+        offboard_control = Drone_One()
+        rclpy.spin(offboard_control)
+        offboard_control.destroy_node()
+        rclpy.shutdown()
     except Exception as e:
-        print(f"Exception occured in Drone_One Node: {e}")
+        print(f"Exception occurred in Drone_One Node: {e}")
+        rclpy.shutdown()
+
+#if __name__ == '__main__':
+#    try:
+#        main()
+#    except Exception as e:
+#        print(f"Exception occured in Drone_One Node: {e}")

@@ -13,6 +13,11 @@ setup(
     maintainer_email='your@email.com',
     description='Drone offboard control package',
     license='MIT',
+    data_files=[
+        ('share/ament_index/resource_index/packages',
+            ['resource/offboard_control_pkg']),
+        ('share/offboard_control_pkg', ['package.xml']),
+    ],
     entry_points={
         'console_scripts': [
             'offboard_control_node = offboard_control_pkg.control_node:main',
