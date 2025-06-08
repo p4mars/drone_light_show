@@ -7,22 +7,22 @@ def generate_launch_description():
     return LaunchDescription([
         Node(
             package='offboard_control_pkg',
-            executable='offboard_control_node',
-            name='control',
+            executable='Control_Node',
+            name='control_node',
             output='screen'),
         Node(
             package='offboard_control_pkg',
             executable='Drone_One_Node',
-            name='control',
+            name='drone1_node',
             output='screen'),
         Node(
             package='offboard_control_pkg',
             executable='Drone_Two_Node',
-            name='control',
+            name='drone2_node',
             output='screen'),
         Node(
             package='offboard_control_pkg',
             executable='Drone_Three_Node',
-            name='control',
+            name='drone3_node',
             output='screen')
     ])

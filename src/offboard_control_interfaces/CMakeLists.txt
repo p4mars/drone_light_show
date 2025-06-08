@@ -16,5 +16,6 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Drone3Info.msg"
   DEPENDENCIES builtin_interfaces std_msgs
 )
+ament_export_dependencies(rosidl_default_runtime)
 
 ament_package()

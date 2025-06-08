@@ -10,6 +10,7 @@ import numpy as np
 class Drone_Three(Node):
     def __init__(self) -> None:
         super().__init__('Drone_Three_Node')
+
         self.leader = None #px4_2, px4_3
         self.follower_number = None
 
@@ -18,7 +19,7 @@ class Drone_Three(Node):
             reliability=ReliabilityPolicy.BEST_EFFORT,
             durability=DurabilityPolicy.TRANSIENT_LOCAL,
             history=HistoryPolicy.KEEP_LAST,
-            depth=1
+            depth=10
         )
 
         # Needed for frame transformation 
@@ -56,8 +57,8 @@ class Drone_Three(Node):
         self.global_pos_subscriber = self.create_subscription(
             VehicleGlobalPosition, 'px4_3/fmu/out/vehicle_global_position',
             self.global_position_callback, qos_profile)
-        self.custom_subscriber = self.create_subscription(Drone3Info, 'drone_3_info', \
-                                                           self.listener_callback, 10)
+        self.custom_subscriber = self.create_subscription(Drone3Info, 'drone3_info_topic', \
+                                                           self.listener_callback, qos_profile)
         
         #---------------------------------------
         # State variables
@@ -182,7 +183,7 @@ class Drone_Three(Node):
     # Calculating the position change in the local frame of the leader
     def follower_frame_transform(self):
         leader_latitude_origin = self.leader_vehicle_local_position.ref_lat
-        leader_longitude_origin = self.leader_vehicle_local_position_subscriber.ref_lon
+        leader_longitude_origin = self.leader_vehicle_local_position.ref_lon
 
         follower_latitude_origin = self.vehicle_local_position.ref_lat
         follower_longitude_origin = self.vehicle_local_position.ref_lon        
@@ -216,7 +217,7 @@ class Drone_Three(Node):
         self.coordinate_transform = [origin_delta_longitude, origin_delta_latitude] 
 
     # Update the trajectory for the follower drone
-    def updated_trajectory(setpoints: list, follower_number: int, dt: float) -> list:
+    def updated_trajectory(self, setpoints: list, follower_number: int, dt: float) -> list:
         # THREE SECOND DELAY
         extra_points = 3*follower_number/dt # 3 seconds of delay
 
@@ -229,12 +230,22 @@ class Drone_Three(Node):
         setpoints = new_points + setpoints
         return setpoints
 
+    def listener_callback(self, msg):
+        """Handle incoming custom messages"""
+        self.custom_msg = msg
+        self.leader = msg.follower
+        self.follower_number = msg.follower_number
+        self.get_logger().info(f"Received message: leader={self.leader}, color={msg.light_colour}")
+
+
     # CONTROL LOOP
     def timer_callback(self) -> None:
         # ----------------------------------------
         # TO DO!!!!!!!
         # Subscribe to the TC topic to see if you have a follower 
         # -----------------------------------------
+
+        #self.get_logger().info(f"Received message: leader={self.leader}, color={msg.light_colour}")
 
         self.leader = self.custom_msg.follower
         self.follower_number = self.custom_msg.follower_number
@@ -244,7 +255,7 @@ class Drone_Three(Node):
         self.publish_offboard_control_heartbeat_signal()
         
         # LIGHT FUNCTIONALITY 
-        self.light_control(self, funct, colour)
+        self.light_control(funct, colour)
 
         ## ---------------------------------------------------
         ## PHASE 1: Initialisation (first 5 seconds)
@@ -253,8 +264,8 @@ class Drone_Three(Node):
         ## ---------------------------------------------------
 
         if self.offboard_setpoint_counter == 1:
-            if self.leader != 0:
-                    self.follower_frame_transform(self.leader, self.follower_number, self.dt)
+            if self.leader != "":
+                    self.follower_frame_transform()
             else:
                 pass
 

@@ -40,6 +40,7 @@ class ControlNode(Node):
     def create_drone_msg(self, drone_index, matrix, seq_colours):
 
         # Create the message for the drone
+
         #### This has to bedone manually, since there is no other way (?) to dynamically instatiate the message classes
         if drone_index == 0:
             MsgClass = Drone1Info()
@@ -53,8 +54,13 @@ class ControlNode(Node):
 
         ### explicitly state the follower number as int in order to avoid an assertion error
         msg.follower_number = int(matrix[drone_index][1])
+
+        ### Initialise all fields in the msg class
+        msg.follower = ""
+        msg.light_colour = seq_colours[0]
+
         
-        # If the drone is a leader, it has no follower
+        # If the drone is a leader, it is not following anything
         if matrix[drone_index][0] == 0:
             msg.follower = "" ### Assign an empty value if the drone does not follow anything
             msg.light_colour = seq_colours[0]
@@ -68,7 +74,7 @@ class ControlNode(Node):
         # Publish the message to the corresponding drone topic
         if drone_index == 0:
             self.publisher_drone_1.publish(msg)
-            self.get_logger().info("Publishing to Drone 1")
+            self.get_logger().info(f"Publishing to Drone 1: {msg}")
 
         elif drone_index == 1:
             self.publisher_drone_2.publish(msg)
