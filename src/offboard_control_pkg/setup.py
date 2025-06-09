@@ -17,13 +17,17 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/offboard_control_pkg']),
         ('share/offboard_control_pkg', ['package.xml']),
+        # ADD THIS:
+        ('share/offboard_control_pkg/launch', [
+            'launch/offboard_control_launch_file.launch.py'
+        ]),
     ],
     entry_points={
         'console_scripts': [
-            'offboard_control_node = offboard_control_pkg.control_node:main',
-            'Drone_One_Node = offboard_control_pkg.drone1:main',
-            'Drone_Two_Node = offboard_control_pkg.drone2:main',
-            'Drone_Three_Node = offboard_control_pkg.drone3:main',
+            'control_node = offboard_control_pkg.control_node:main',
+            'drone1 = offboard_control_pkg.drone1:main',
+            'drone2 = offboard_control_pkg.drone2:main',
+            'drone3 = offboard_control_pkg.drone3:main',
         ],
     },
 )
