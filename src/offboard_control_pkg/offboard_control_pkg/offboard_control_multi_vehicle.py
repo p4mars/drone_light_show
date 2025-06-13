@@ -163,18 +163,6 @@ class OffboardControl_MV(Node):
         follower_latitude_origin = self.vehicles[follower_number].vehicle_local_position.ref_lat
         follower_longitude_origin = self.vehicles[follower_number].vehicle_local_position.ref_lon        
         #follower_altitude = self.vehicles[follower_number].global_pos.alt
-
-        # Have to convert the degrees to meters:
-        """#### We can assume a spherical Earth, in which case the following calculation can be used according to wiki:
-        #  https://en.wikipedia.org/wiki/Geographic_coordinate_system#Latitude_and_longitude
-        R_earth = 6367449 ## Earth's avergae meridional radius in meters
-        conversion_coeff = np.pi/180*R_earth
-
-        leader_longitude = conversion_coeff * np.cos(leader_latitude)*leader_longitude
-        leader_latitude = conversion_coeff * leader_latitude
-
-        follower_longitude = conversion_coeff * np.cos(follower_latitude)*follower_longitude
-        follower_latitude = conversion_coeff * follower_latitude"""
         
         #print(f"Leader: {leader_latitude}, {leader_longitude}")
         def convert_coordinate_to_meters(latitude, longitude):
@@ -182,7 +170,7 @@ class OffboardControl_MV(Node):
             # (accurate to a magnitude of cm)
             latitude = np.deg2rad(latitude)
             longitude = np.deg2rad(longitude)
-            # COnversion according to the WGS84 ellipsoid model
+            # Conversion according to the WGS84 ellipsoid model
             # https://en.wikipedia.org/wiki/Geographic_coordinate_system#Latitude_and_longitude
             m_latitude_per_deg = 111132.92 - 559.82*np.cos(2*latitude) + 1.175*np.cos(4*latitude) - 0.0023*np.cos(6*latitude)
             m_longitude_per_deg = 111412.84*np.cos(latitude) - 93.5*np.cos(3*latitude) + 0.118*np.cos(5*latitude)
@@ -238,97 +226,125 @@ class OffboardControl_MV(Node):
                     self.get_logger().info(f"[{vehicle.namespace}] Arm command sent")
         
         ## ---------------------------------------------------
-        ## PHASE 2: Circle trajectory example
+        ## PHASE 2: Circle tiangular trajectory example
         ## ---------------------------------------------------
-        """
-        for vehicle in self.vehicles:
-            if vehicle.vehicle_local_position.z <= self.takeoff_height*0.95:
-            # Check if the drone is armed and in offboard mode
-                if vehicle.theta < 2 * np.pi:
-                    # Publish circle trajectory
-                    x = self.radius * np.cos(vehicle.theta)
-                    y = self.radius * np.sin(vehicle.theta)
 
-                    self.publish_position_setpoint(vehicle, x, y, self.takeoff_height)
-                    vehicle.theta += 0.1 # Increment theta for circular motion
-
-                # ---------------------------------------------------
-                # PHASE 3: Landing
-                # ---------------------------------------------------
-                #INITIATE LANDING
-                elif vehicle.theta >= 2 * np.pi and not vehicle.is_landing_triggered:
-                    self.is_landing_triggered = True
-                    self.land(vehicle)
-                    self.get_logger().info(f"[{vehicle.namespace}] Landing initiated")
-
-                    # Disarm the drone after landing
-            if vehicle.is_landing_triggered and vehicle.vehicle_local_position.z > -0.5:  # Within 0.5m of ground (NED frame)
-                self.get_logger().info(f"[{vehicle.namespace}] Landed successfully")
-                self.disarm(vehicle)
-                vehicle.is_disarmed = True
-            """
-        
-        ## ---------------------------------------------------
-        ## PHASE 2.1: Frame transform example
-        ## ---------------------------------------------------
-        ##### Making a trajectory for an equilateral triangle in the leader frame
+        ##### Making a trajectory for an equilateral triangle in the leader frame with repeating verteces of [-3.0,0.0,2.0], [0.0,5.196,2.0], [3.0,0.0,2.0]
         Triangle_corner_positions = [[-3.0,0.0,2.0], [0.0,5.196,2.0], [3.0,0.0,2.0], [-3.0,0.0,2.0], [0.0,5.196,2.0], [3.0,0.0,2.0], [-3.0,0.0,2.0], [0.0,5.196,2.0]] # an equilateral triangle example in the leader frame
         
         positional_accuracy_margin = 0.2 # 0.2m accuracy margin
 
-        ## publishing the leader position setpoint
-        # Check if all drones are within the positional accuracy margin of their target positions
+        ### Once the take-off procedure has ended after 10 seconds, the drones will start flying to their target positions:
         if self.offboard_setpoint_counter >= 100:
-            
+
+            ### If the drones are close to their target positions for sufficiently long, then move them to the next position
+            ### The parameter that determines whether all drones are in fact at their positions is initialised as false for fail-safe purposes
             all_close = False
+
+            # If the number of position changes has been less than the number of positions in the triangle, then make all drones fly to their target positions
             if self.position_change < len(Triangle_corner_positions) - 1:
+                # the assumption is that all drones at their target positions
                 all_close = True
+
+                # To check if this is true, we can calculate the distance between the current position and the target position
+                # and if the distance is greater than the positional accuracy margin, then we can set all_close to false:
+                ## Start by going through all of the drones in the "vehicles" list
                 for i, vehicle in enumerate(self.vehicles):
+
+                    # For the leader drone, the calcualtion does not need a coordinate transformation
                     if i == 0:
                         target_x = Triangle_corner_positions[self.position_change][0]
                         target_y = Triangle_corner_positions[self.position_change][1]
+
+                    # For all of the followers (if i != 0), however, the transformation has to be included in the calculation
                     else:
-                        # make the second drone fly the point in front of the leader drone
+                        # make the second drone fly to the point preceding the leader drone (or the follower drone before it if i > 1)
+                        # the index (idx) determines the target position in the list of triangle corner positions
                         idx = self.position_change + i
-                        #print(f"idx: {idx}", "i-1: ", i-1)
-                        #print(f"coordinate_transform[0]: {vehicle.coordinate_transform}")
+                        
+                        # The coordinate transform is applied to the target position to convert it to the follower local frame
                         target_x = Triangle_corner_positions[idx][0] - vehicle.coordinate_transform[0]
                         target_y = Triangle_corner_positions[idx][1] - vehicle.coordinate_transform[1]
+                    
+                    # The current positions can be performed without the coordinate transformations for all drones since it is always given in the relevant local frame
                     current_x = vehicle.vehicle_local_position.x
                     current_y = vehicle.vehicle_local_position.y
+
+                    ### Publish the position setpoint for the drone
                     self.publish_position_setpoint(vehicle, target_x, target_y, self.takeoff_height)
 
+
+                    ## Calculate the distance between the target and currrent position to determine if the target has been reached
                     dist = np.sqrt((current_x - target_x) ** 2 + (current_y - target_y) ** 2)
+
+                    ## If the distance is larger than the positional accuracy margin, then at least this drone is not at its target position and thus
+                    ## not all drones are close to their target positions
                     if dist > positional_accuracy_margin:
                         all_close = False
 
+
+            ### If the number of points in the path list has been exceeded, then make all drones return to their original positions:
             else:
-            ### make all drones return to their original positions
+            ### make all drones return to their original positions by cycling through all of the drones
                 for i, vehicle in enumerate(self.vehicles):
+
+                    ### Drones are once more assumed to be at their target positions unless proven otherwise using the distance calculation
                     all_close = True
+
+                    # Each drone receives the same target position of [0.0, 0.0, self.takeoff_height] since that is the origin of their own ocal frames
+                    # Therefore the drones will return to their starting locations and hover at the takeoff height
                     self.publish_position_setpoint(vehicle, 0.0, 0.0, self.takeoff_height)
+
+                    ### The current position is determined in the local frame as was done before
                     current_x = vehicle.vehicle_local_position.x
                     current_y = vehicle.vehicle_local_position.y
+
+
+                    #Since the target location is [0,0] for all drones, the distance can be calculated as follows:
                     dist = np.sqrt(current_x ** 2 + current_y ** 2)
+
+                    ## We can mointor the distance from the landing location for all drones
                     print(f"distance for drone [{i}]: {dist}")
+
+                    # If the distance is less than the positional accuracy margin, then the drone is close to its target position
                     if dist < positional_accuracy_margin:
+
+                        #Log some information for the user to see the landing process.
                         self.get_logger().info(f"[{vehicle.namespace}] Drone is within positional accuracy margin. Hovering at position: {[0.0, 0.0, self.takeoff_height]}")
                         self.get_logger().info(f"[{vehicle.namespace}] hover counter: {self.all_close_counter}")
+
+                        ## After hovering for 2 seconds, the drones will initiate landing
                         if self.all_close_counter > 20:  # 2 seconds at 10Hz
                             self.get_logger().info(f"[{vehicle.namespace}] Landing initiated")
                             self.land(vehicle)
                             vehicle.is_landing_triggered = True
+
+                        # If the drone has landed (determined by its distance from the ground), then disarm it
                             if vehicle.vehicle_local_position.z > -0.5:  # Within 0.5m of ground (NED frame)
                                 self.get_logger().info("Landed successfully")
                                 self.disarm(vehicle)
+
+                    ## If the distance is larger than the positional accuracy margin, then at least this drone is not at its target position and thus
+                    ## not all drones are close to their target positions
                     else:
                         all_close = False
 
+            ### For all instances where the closenes of all drones was checked, we can now determine the action to take if they are all close to their target positions
             if all_close:
+
+                ## Publish a message to notify the user if all drones are close to their target positions
                 #self.get_logger().info("All drones are close to their target positions.")
+
+                ### If the drones are close to their target positions, then we can either hover for a while or move to the next position
+                ### If the drones have been close to their positions for less than N seconds, we can keep hovering
+                ### In this case N is 2.5 (25 iterations at 10Hz)
+
                 if self.all_close_counter < 25: # repeat the location check for 2.5 seconds at 10Hz
                     self.get_logger().info(f"All drones are close to their target positions. counter = [{self.all_close_counter}]")
                     self.all_close_counter += 1
+
+                ### If the drones have been close to their positions for more than N seconds, we can move to the next position
+                ### This is done by increasing the position_change counter and resetting the all_close_counter to 0:
                 else:
                     self.position_change += 1
                     self.get_logger().info(f"All drones are close to their target positions. Moving to next position. Changes: {self.position_change}")
