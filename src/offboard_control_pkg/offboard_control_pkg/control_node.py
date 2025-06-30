@@ -21,10 +21,14 @@ class ControlNode(Node):
         # FOR THE USER
         # MANUALLY SET THE FOLLOWER AND LEADER DRONES
         #--------------------------------------------
-        # [Who is the leader, which follower, sequence number in the line]
-        self.relationship_matrix = np.array([[0, 0, 1], [1, 1, 2], [2, 1, 3]])
+        # [Sequence number in the line, who is the drone's leader, which follower it is]
+
+        self.relationship_matrix = np.array([1, None, None], [2, 1, 1], [3, 1, 2])
+
+        #self.relationship_matrix = np.array([[0, 0, 1], [1, 1, 2], [2, 1, 3]])
+
         
-        # self.relationship_matrix = np.array([1, None, None], [2, 1, 1], [3, 1, 2])
+        
         #--------------------------------------------
         # PUBLISHERS 
 
@@ -62,25 +66,27 @@ class ControlNode(Node):
         msg = MsgClass    
 
         ### explicitly state the follower number as int in order to avoid an assertion error
-        msg.follower_number = int(matrix[drone_index][1])
+        msg.follower_number = int(matrix[drone_index][2])
 
         ### Initialise all fields in the msg class
-        msg.follower = ""
+        msg.follower_of = ""
         msg.light_colour = seq_colours[0]
-
+        msg.drone_name = self.namespace[drone_index] # Assign the drone name based on the index
         
         # If the drone is a leader, it is not following anything
         if matrix[drone_index][0] == 0:
-            msg.follower = "" ### Assign an empty value if the drone does not follow anything
+            msg.follower_of = "" ### Assign an empty string if the drone does not follow anything
             msg.light_colour = seq_colours[0]
         
         # If the drone is a follower, assign its leader & colour
         else:
             index = matrix[drone_index][0]
-            msg.light_colour = seq_colours[matrix[drone_index][2]-1]
-            msg.follower = self.namespace[index - 1] # Adjust for zero-based index
+            msg.light_colour = seq_colours[matrix[drone_index][2]]
+            msg.follower_of = self.namespace[matrix[drone_index][1]-1] # Adjust for zero-based index
 
-        # Publish the message to the corresponding drone topic
+        
+        ####### THIS REQUIRES MANUAL ADJUSTMENTS ###########################################
+        # Publish the message to the corresponding drone topic 
         if drone_index == 0:
             self.publisher_drone_1.publish(msg)
             self.get_logger().info(f"Publishing to Drone 1: {msg}")
@@ -92,6 +98,7 @@ class ControlNode(Node):
         elif drone_index == 2:
             self.publisher_drone_3.publish(msg)
             self.get_logger().info("Publishing to Drone 3")
+        #####################################################################################
         return 
 
     def info_publisher(self):

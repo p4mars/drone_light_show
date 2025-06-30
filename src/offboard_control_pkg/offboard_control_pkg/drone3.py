@@ -5,7 +5,7 @@ from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
 from px4_msgs.msg import \
     OffboardControlMode, TrajectorySetpoint, VehicleCommand, VehicleLocalPosition, \
-          VehicleGlobalPosition, LedControl
+          VehicleGlobalPosition, LedControl, VehicleStatus
 from offboard_control_interfaces.msg import Drone3Info
 import numpy as np 
 
@@ -13,7 +13,7 @@ class Drone_Three(Node):
     def __init__(self) -> None:
         super().__init__('Drone_Three_Node')
 
-        self.leader = None #px4_2, px4_3
+        self.leader = "" #px4_2, px4_3
         self.follower_number = None
 
         # Configure QoS profile for publishing and subscribing
@@ -25,18 +25,18 @@ class Drone_Three(Node):
         )
 
         # Needed for frame transformation 
-        if self.leader == 0:
-            pass
-        else:
-            self.leader_gps = self.create_subscription(
-            VehicleGlobalPosition, f'{self.follower}/fmu/out/vehicle_global_position',
-            self.global_position_callback, qos_profile)
-
-            self.leader_vehicle_local_position_subscriber = self.create_subscription(
-            VehicleLocalPosition, f'{self.follower}/fmu/out/vehicle_local_position',
-            self.vehicle_local_position_callback, qos_profile)
-
-            self.leader_vehicle_local_position = VehicleLocalPosition()
+        #if self.leader == 0:
+        #    pass
+        #else:
+        #    self.leader_gps = self.create_subscription(
+        #    VehicleGlobalPosition, f'{self.follower}/fmu/out/vehicle_global_position',
+        #    self.global_position_callback, qos_profile)
+#
+        #    self.leader_vehicle_local_position_subscriber = self.create_subscription(
+        #    VehicleLocalPosition, f'{self.follower}/fmu/out/vehicle_local_position',
+        #    self.vehicle_local_position_callback, qos_profile)
+#
+        #    self.leader_vehicle_local_position = VehicleLocalPosition()
 
         #---------------------------------------
         # Publishers
@@ -56,9 +56,15 @@ class Drone_Three(Node):
         self.vehicle_local_position_subscriber = self.create_subscription(
             VehicleLocalPosition, 'px4_3/fmu/out/vehicle_local_position',
             self.vehicle_local_position_callback, qos_profile)
+        
         self.global_pos_subscriber = self.create_subscription(
             VehicleGlobalPosition, 'px4_3/fmu/out/vehicle_global_position',
             self.global_position_callback, qos_profile)
+        
+        self.vehicle_status_subscriber = self.create_subscription(
+            VehicleStatus, 'px4_1/fmu/out/vehicle_status',
+            self.vehicle_status_callback, qos_profile)
+        
         self.custom_subscriber = self.create_subscription(Drone3Info, 'drone3_info_topic', \
                                                            self.listener_callback, qos_profile)
         
@@ -66,7 +72,9 @@ class Drone_Three(Node):
         # State variables
         #---------------------------------------
         self.custom_msg = Drone3Info()
+        self-vehicle_status = VehicleStatus()
         self.vehicle_local_position = VehicleLocalPosition()
+        self.leader_vehicle_local_position = VehicleLocalPosition()  # Use own local position as
         self.global_pos = VehicleGlobalPosition()
         self.coordinate_transform = []  
         self.is_landing_triggered = False 
@@ -135,6 +143,39 @@ class Drone_Three(Node):
     def global_position_callback(self, msg):
         self.global_pos = msg
 
+    def vehicle_status_callback(self, msg):
+        self.vehicle_status = msg
+    
+    def listener_callback(self, msg):
+        qos_profile = QoSProfile(
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=10
+        )
+        
+        """Handle incoming custom messages"""
+        self.custom_msg = msg
+        self.leader = msg.follower_of
+        self.follower_number = msg.follower_number 
+        self.get_logger().info(f"Received message: leader={self.leader}, color={msg.light_colour}")
+        self.drone_name = msg.drone_name
+
+        # Needed for frame transformation 
+        if self.leader == "":
+            pass
+        else:
+            #self.leader_gps = self.create_subscription(
+            #VehicleGlobalPosition, f'{self.leader}/fmu/out/vehicle_global_position',
+            #self.global_position_callback, qos_profile)
+
+            self.leader_vehicle_local_position_subscriber = self.create_subscription(
+            VehicleLocalPosition, f'{self.leader}/fmu/out/vehicle_local_position',
+            self.vehicle_local_position_callback, qos_profile)
+
+            self.leader_vehicle_local_position = VehicleLocalPosition()
+
+    ##################################################################
     # Light control command 
     def light_control(self, funct: str, colour: str, num_blinks: int = 0, priority: int = 2):
         mode_dict = {
@@ -238,13 +279,6 @@ class Drone_Three(Node):
         # Concatenate the new points to the front of the setpoints
         setpoints = new_points + setpoints
         return setpoints
-
-    def listener_callback(self, msg):
-        """Handle incoming custom messages"""
-        self.custom_msg = msg
-        self.leader = msg.follower
-        self.follower_number = msg.follower_number
-        self.get_logger().info(f"Received message: leader={self.leader}, color={msg.light_colour}")
 
 
     # CONTROL LOOP

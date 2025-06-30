@@ -5,7 +5,7 @@ from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
 from px4_msgs.msg import \
     OffboardControlMode, TrajectorySetpoint, VehicleCommand, VehicleLocalPosition, \
-          VehicleGlobalPosition, LedControl
+          VehicleGlobalPosition, LedControl, VehicleStatus
 from offboard_control_interfaces.msg import Drone2Info
 import numpy as np 
 
@@ -25,18 +25,18 @@ class Drone_Two(Node):
         )
 
         # Needed for frame transformation 
-        if self.leader == 0:
-            pass
-        else:
-            self.leader_gps = self.create_subscription(
-            VehicleGlobalPosition, f'{self.follower}/fmu/out/vehicle_global_position',
-            self.global_position_callback, qos_profile)
-
-            self.leader_vehicle_local_position_subscriber = self.create_subscription(
-            VehicleLocalPosition, f'{self.follower}/fmu/out/vehicle_local_position',
-            self.vehicle_local_position_callback, qos_profile)
-
-            self.leader_vehicle_local_position = VehicleLocalPosition()
+        #if self.leader == 0:
+        #    pass
+        #else:
+        #    self.leader_gps = self.create_subscription(
+        #    VehicleGlobalPosition, f'{self.follower}/fmu/out/vehicle_global_position',
+        #    self.global_position_callback, qos_profile)
+#
+        #    self.leader_vehicle_local_position_subscriber = self.create_subscription(
+        #    VehicleLocalPosition, f'{self.follower}/fmu/out/vehicle_local_position',
+        #    self.vehicle_local_position_callback, qos_profile)
+#
+        #    self.leader_vehicle_local_position = VehicleLocalPosition()
 
         #---------------------------------------
         # Publishers
@@ -59,6 +59,10 @@ class Drone_Two(Node):
         self.global_pos_subscriber = self.create_subscription(
             VehicleGlobalPosition, 'px4_2/fmu/out/vehicle_global_position',
             self.global_position_callback, qos_profile)
+        
+        self.vehicle_status_subscriber = self.create_subscription(
+            VehicleStatus, 'px4_2/fmu/out/vehicle_status',
+            self.vehicle_status_callback, qos_profile)
         self.custom_subscriber = self.create_subscription(Drone2Info, 'drone2_info_topic', \
                                                           self.listener_callback, qos_profile)
         
@@ -66,7 +70,9 @@ class Drone_Two(Node):
         # State variables
         #---------------------------------------
         self.custom_msg = Drone2Info()
+        self.vehicle_status = VehicleStatus()
         self.vehicle_local_position = VehicleLocalPosition()
+        self.leader_vehicle_local_position = self.vehicle_local_position  # Use own local position as a placeholder
         self.global_pos = VehicleGlobalPosition()
         self.coordinate_transform = []  
         self.is_landing_triggered = False 
@@ -134,10 +140,42 @@ class Drone_Two(Node):
 
     def global_position_callback(self, msg):
         self.global_pos = msg
+    
+    def vehicle_status_callback(self, msg):
+        self.vehicle_status = msg
 
+    def listener_callback(self, msg):
+        qos_profile = QoSProfile(
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=10
+        )
+
+        """Handle incoming custom messages"""
+        self.custom_msg = msg
+        self.leader = msg.follower_of
+        self.follower_number = msg.follower_number 
+        self.get_logger().info(f"Received message: leader={self.leader}, color={msg.light_colour}")
+        self.drone_name = msg.drone_name
+
+        # Needed for frame transformation 
+        if self.leader == "":
+            pass
+        else:
+            #self.leader_gps = self.create_subscription(
+            #VehicleGlobalPosition, f'{self.leader}/fmu/out/vehicle_global_position',
+            #self.global_position_callback, qos_profile)
+
+            self.leader_vehicle_local_position_subscriber = self.create_subscription(
+            VehicleLocalPosition, f'{self.leader}/fmu/out/vehicle_local_position',
+            self.vehicle_local_position_callback, qos_profile)
+
+            self.leader_vehicle_local_position = VehicleLocalPosition()    
+    ####################################################    
 
     # Light control command 
-    def light_control(self, funct: str, colour: str, num_blinks: int = 0, priority: int = 2):
+    def light_control(self, funct: str, colour: str, num_blinks: int = 5, priority: int = 2):
         mode_dict = {
         "off": LedControl.MODE_OFF,
         "on": LedControl.MODE_ON,
@@ -240,12 +278,6 @@ class Drone_Two(Node):
         setpoints = new_points + setpoints
         return setpoints
 
-    def listener_callback(self, msg):
-        """Handle incoming custom messages"""
-        self.custom_msg = msg
-        self.leader = msg.follower
-        self.follower_number = msg.follower_number
-        self.get_logger().info(f"Received message: leader={self.leader}, color={msg.light_colour}")
 
     # CONTROL LOOP
     def timer_callback(self) -> None:
@@ -254,12 +286,17 @@ class Drone_Two(Node):
         # Subscribe to the TC topic to see if you have a follower 
         # -----------------------------------------
 
-
+        ######## Assign the leader and follower relationships and the light colour ##########
         self.leader = self.custom_msg.follower
         self.follower_number = self.custom_msg.follower_number
         colour = self.custom_msg.light_colour # light colour
         funct = "blink_slow" # light function
-        #self.get_logger().info(f"Received message: leader={self.leader}, color={msg.light_colour}")
+        ###########################
+        
+
+        print(f"Leader: {self.leader}, Follower number: {self.follower_number}, Colour: {colour}")
+        print(colour)
+        funct = "blink_slow" # light function
 
         self.publish_offboard_control_heartbeat_signal()
         
@@ -274,7 +311,9 @@ class Drone_Two(Node):
 
         if self.offboard_setpoint_counter == 1:
             if self.leader != 0:
-                    self.follower_frame_transform(self.leader, self.follower_number, self.dt)
+                    #### If the drone is a follower (if the drone has a leader), calculate the frame transform
+                    self.follower_frame_transform()
+                    ##### results is self.coordinate_transform which has the form [x_offset, y_offset] in meters
             else:
                 pass
 
@@ -282,6 +321,7 @@ class Drone_Two(Node):
             # ~10 seconds at 10Hz timer
             # Publish setpoint continuously
             self.publish_position_setpoint(0.0, 0.0, self.takeoff_height)
+            ##### The setpoint can be 0.0, 0.0 for all drones, since they would be hovering just over their starting location (origin of the local frame)
         
             # Engage offboard after 2.5 second
             # Sending actual offboard command
