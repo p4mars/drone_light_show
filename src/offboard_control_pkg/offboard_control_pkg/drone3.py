@@ -289,10 +289,16 @@ class Drone_Three(Node):
         # -----------------------------------------
 
         #self.get_logger().info(f"Received message: leader={self.leader}, color={msg.light_colour}")
-
-        self.leader = self.custom_msg.follower
+        
+        ######## Assign the leader and follower relationships and the light colour ##########
+        self.leader = self.custom_msg.leader
         self.follower_number = self.custom_msg.follower_number
         colour = self.custom_msg.light_colour # light colour
+        ###############
+
+
+        print(f"Leader: {self.leader}, Follower number: {self.follower_number}, Colour: {colour}")
+        print(colour)
         funct = "blink_slow" # light function
 
         self.publish_offboard_control_heartbeat_signal()
