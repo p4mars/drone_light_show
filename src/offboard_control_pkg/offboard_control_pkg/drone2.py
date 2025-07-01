@@ -394,7 +394,6 @@ class Drone_Two(Node):
 
         print(f"Leader: {self.leader}, Follower number: {self.follower_number}, Colour: {colour}")
         print(colour)
-        funct = "blink_slow" # light function
 
         self.publish_offboard_control_heartbeat_signal()
         
@@ -476,7 +475,7 @@ class Drone_Two(Node):
                         (self.vehicle_local_position.y - offset_y) - positions[self.position_change][1] < margin:
                     self.position_change += 1
                 # Publishing ! :D
-                self.publish_position_setpoint(target_x+offset_x, target_y+offset_y, self.takeoff_height)
+                self.publish_position_setpoint(target_x + offset_x, target_y + offset_y, self.takeoff_height)
             
             # Beginning landing sequence after all positions have been reached
             else:
