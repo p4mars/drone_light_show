@@ -23,7 +23,7 @@ class ControlNode(Node):
         #--------------------------------------------
         # [Sequence number in the line, who is the drone's leader, which follower it is]
 
-        self.relationship_matrix = np.array([1, None, None], [2, 1, 1], [3, 1, 2])
+        self.relationship_matrix = np.array([[1, 0, 0], [2, 1, 1], [3, 1, 2]])
 
         #self.relationship_matrix = np.array([[0, 0, 1], [1, 1, 2], [2, 1, 3]])
 
@@ -74,13 +74,12 @@ class ControlNode(Node):
         msg.drone_name = self.namespace[drone_index] # Assign the drone name based on the index
         
         # If the drone is a leader, it is not following anything
-        if matrix[drone_index][0] == 0:
+        if matrix[drone_index][2] == 0:
             msg.follower_of = "" ### Assign an empty string if the drone does not follow anything
             msg.light_colour = seq_colours[0]
         
         # If the drone is a follower, assign its leader & colour
         else:
-            index = matrix[drone_index][0]
             msg.light_colour = seq_colours[matrix[drone_index][2]]
             msg.follower_of = self.namespace[matrix[drone_index][1]-1] # Adjust for zero-based index
 

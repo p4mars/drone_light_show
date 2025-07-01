@@ -56,6 +56,7 @@ class Drone_Two(Node):
         self.vehicle_local_position_subscriber = self.create_subscription(
             VehicleLocalPosition, 'px4_2/fmu/out/vehicle_local_position',
             self.vehicle_local_position_callback, qos_profile)
+        
         self.global_pos_subscriber = self.create_subscription(
             VehicleGlobalPosition, 'px4_2/fmu/out/vehicle_global_position',
             self.global_position_callback, qos_profile)
@@ -63,6 +64,7 @@ class Drone_Two(Node):
         self.vehicle_status_subscriber = self.create_subscription(
             VehicleStatus, 'px4_2/fmu/out/vehicle_status',
             self.vehicle_status_callback, qos_profile)
+        
         self.custom_subscriber = self.create_subscription(Drone2Info, 'drone2_info_topic', \
                                                           self.listener_callback, qos_profile)
         
@@ -74,7 +76,7 @@ class Drone_Two(Node):
         self.vehicle_local_position = VehicleLocalPosition()
         self.leader_vehicle_local_position = self.vehicle_local_position  # Use own local position as a placeholder
         self.global_pos = VehicleGlobalPosition()
-        self.coordinate_transform = []  
+        self.coordinate_transform = [0,0]  
         self.is_landing_triggered = False 
         self.is_disarmed = False
         
@@ -92,6 +94,102 @@ class Drone_Two(Node):
         #----------------------------------------
         self.dt = 0.1  # 10Hz
         self.timer = self.create_timer(self.dt, self.timer_callback)
+
+        flame_path = [[304.67,1259.00], [274.00,1160.33], [274.00,1160.33],
+             [274.00,1160.33], [266.67,1037.33], [266.33,1037.33],
+             [266.00,1037.33], [279.00,953.00], [279.00,953.00],
+             [279.00,953.00], [309.00,875.00], [309.00,875.00],
+             [309.00,875.00], [347.00,808.00], [347.00,808.00],
+             [347.00,808.00], [389.00,757.00], [389.00,756.00],
+             [389.00,755.00], [437.00,710.00], [437.00,710.00],
+             [437.00,710.00], [490.00,668.00], [491.00,666.00],
+             [492.00,664.00], [549.00,627.00], [549.00,627.00],
+             [549.00,627.00], [607.00,593.00], [607.00,593.00],
+             [607.00,593.00], [668.00,564.00], [668.00,564.00],
+             [668.00,564.00], [725.00,538.00], [727.00,538.00],
+             [729.00,538.00], [782.00,518.00], [784.00,517.00],
+             [786.00,516.00], [843.00,501.00], [843.00,501.00],
+             [843.00,501.00], [899.00,485.00], [899.00,485.00],
+             [899.00,485.00], [961.00,469.00], [961.00,469.00],
+             [961.00,469.00], [1032.00,449.00], [1032.00,449.00],
+             [1032.00,449.00], [1117.00,421.00], [1117.00,421.00],
+             [1117.00,421.00], [1180.00,397.00], [1180.00,397.00],
+             [1180.00,397.00], [1239.00,360.00], [1239.00,360.00],
+             [1239.00,360.00], [1281.00,329.00], [1281.00,329.00],
+             [1281.00,329.00], [1313.00,323.00], [1313.00,323.00],
+             [1313.00,323.00], [1322.00,347.00], [1322.00,348.00],
+             [1322.00,349.00], [1307.00,376.00], [1306.00,378.00],
+             [1305.00,380.00], [1274.00,406.00], [1272.00,408.00],
+             [1270.00,410.00], [1226.00,441.00], [1225.00,441.00],
+             [1224.00,441.00], [1174.00,478.00], [1174.00,480.00],
+             [1174.00,482.00], [1110.00,525.00], [1106.00,527.00],
+             [1102.00,529.00], [1039.00,575.00], [1037.00,578.00],
+             [1035.00,581.00], [993.00,614.00], [991.00,616.00],
+             [989.00,618.00], [951.00,657.00], [949.00,659.00],
+             [947.00,661.00], [914.00,727.00], [914.00,727.00],
+             [914.00,727.00], [905.00,777.00], [906.00,779.00],
+             [907.00,781.00], [926.00,831.00], [928.00,834.00],
+             [930.00,837.00], [969.00,855.00], [972.00,856.00],
+             [975.00,857.00], [1030.00,865.00], [1037.00,862.00],
+             [1044.00,859.00], [1094.00,838.00], [1095.00,838.00],
+             [1096.00,838.00], [1152.00,806.00], [1152.00,805.00],
+             [1152.00,804.00], [1186.00,791.00], [1186.00,791.00],
+             [1186.00,791.00], [1202.00,815.00], [1203.00,816.00],
+             [1204.00,817.00], [1200.00,849.00], [1197.00,854.00],
+             [1194.00,859.00], [1171.00,895.00], [1169.00,898.00],
+             [1167.00,901.00], [1145.00,947.00], [1145.00,948.00],
+             [1145.00,949.00], [1094.00,1026.00], [1093.00,1028.00],
+             [1092.00,1030.00], [1057.00,1080.00], [1053.00,1084.00],
+             [1049.00,1088.00], [1006.00,1137.00], [1004.00,1141.00],
+             [1002.00,1145.00], [962.00,1184.00], [959.00,1187.00],
+             [956.00,1190.00], [893.00,1236.00], [891.00,1238.00],
+             [889.00,1240.00], [840.00,1274.00], [836.00,1278.00],
+             [832.00,1282.00], [760.00,1314.00], [759.00,1314.00],
+             [758.00,1314.00], [693.00,1325.00], [691.00,1327.00],
+             [689.00,1329.00], [647.00,1322.00], [647.00,1322.00],
+             [647.00,1322.00], [642.00,1294.00], [642.00,1293.00],
+             [642.00,1292.00], [670.00,1271.00], [672.00,1269.00],
+             [674.00,1267.00], [708.00,1250.00], [712.00,1247.00],
+             [716.00,1244.00], [745.00,1225.00], [748.00,1222.00],
+             [751.00,1219.00], [784.00,1182.00], [785.00,1180.00],
+             [786.00,1178.00], [814.00,1127.00], [815.00,1125.00],
+             [816.00,1123.00], [839.00,1086.00], [841.00,1083.00],
+             [843.00,1080.00], [858.00,1040.00], [859.00,1038.00],
+             [860.00,1036.00], [861.00,989.00], [860.00,988.00],
+             [859.00,987.00], [833.00,976.00], [827.00,976.00],
+             [821.00,976.00], [790.00,1002.00], [788.00,1005.00],
+             [786.00,1008.00], [760.00,1039.00], [754.00,1043.00],
+             [748.00,1047.00], [698.00,1070.00], [691.00,1071.00],
+             [684.00,1072.00], [620.00,1057.00], [620.00,1056.00],
+             [620.00,1055.00], [590.00,1013.00], [590.00,1008.00],
+             [590.00,1003.00], [597.00,957.00], [598.00,956.00],
+             [599.00,955.00], [619.00,919.00], [620.00,918.00],
+             [621.00,917.00], [658.00,874.00], [659.00,872.00],
+             [660.00,870.00], [687.00,832.00], [690.00,829.00],
+             [693.00,826.00], [720.00,775.00], [721.00,773.00],
+             [722.00,771.00], [729.00,722.00], [729.00,722.00],
+             [729.00,722.00], [706.00,703.00], [703.00,703.00],
+             [700.00,703.00], [669.00,713.00], [668.00,714.00],
+             [667.00,715.00], [641.00,750.00], [639.00,754.00],
+             [637.00,758.00], [617.00,796.00], [615.00,798.00],
+             [613.00,800.00], [577.00,829.00], [572.00,835.00],
+             [567.00,841.00], [517.00,880.00], [515.00,881.00],
+             [513.00,882.00], [477.00,913.00], [471.00,917.00],
+             [465.00,921.00], [422.00,966.00], [420.00,969.00],
+             [418.00,972.00], [371.00,1016.00], [368.00,1021.00],
+             [365.00,1026.00], [336.00,1079.00], [334.00,1083.00],
+             [332.00,1087.00], [319.00,1143.00], [319.00,1146.00],
+             [319.00,1149.00], [321.00,1201.00], [321.00,1201.00]]
+        
+        flame_path = np.array(flame_path) # Converting to numpy array for easier manipulation
+        # Flip the y-axis to make the origin (0,0) start at the bottom-left
+        flame_path[:, 1] = np.max(flame_path[:, 1]) - flame_path[:, 1]
+        flame_path[:,1] = - flame_path[:,1]  # Flip the y-axis for positive downward coordinate system (NED frame)
+        flame_path[:, 0] = flame_path[:, 0] - flame_path[0][0] # Normalize to start from (0,0)
+        flame_path = flame_path / np.max(flame_path)  # Scale down to fit in the local frame by scaling everything to 0-1 range
+        flame_path = flame_path * 10.0  # Scale the maximum dimension of the flame to 10m for the trajectory
+        flame_path = flame_path.tolist()
+        self.flame_path = flame_path  # Store the flame path for later use
         
     def publish_vehicle_command(self, target, command, **params) -> None:
         msg = VehicleCommand()
@@ -310,7 +408,7 @@ class Drone_Two(Node):
         ## ---------------------------------------------------
 
         if self.offboard_setpoint_counter == 1:
-            if self.leader != 0:
+            if self.leader != "":
                     #### If the drone is a follower (if the drone has a leader), calculate the frame transform
                     self.follower_frame_transform()
                     ##### results is self.coordinate_transform which has the form [x_offset, y_offset] in meters
@@ -340,15 +438,19 @@ class Drone_Two(Node):
         ## PHASE 2.1: Frame transform example
         ## ---------------------------------------------------
         # Trajectory for an equilateral triangle in the leader frame
-        positions = [[-3.0,0.0,2.0], [0.0,5.196,2.0], [3.0,0.0,2.0], [-3.0,0.0,2.0], [0.0,5.196,2.0], [3.0,0.0,2.0], [-3.0,0.0,2.0], [0.0,5.196,2.0]] # an equilateral triangle example in the leader frame
+        #positions = [[-3.0,0.0,2.0], [0.0,5.196,2.0], [3.0,0.0,2.0], [-3.0,0.0,2.0], [0.0,5.196,2.0], [3.0,0.0,2.0], [-3.0,0.0,2.0], [0.0,5.196,2.0]] # an equilateral triangle example in the leader frame
         
+        ### The actual flame path in 2D, which needs to be adjusted to the 3D world
+        positions = self.flame_path # Using the flame path as the trajectory for the drone, offset for the local frame of the leader
+        
+        ### Margin for positional accuracy in order to proceed to the next point
         margin = 0.2 # 0.2m accuracy margin
 
         # ---------------------------------------------------
         # CONCATENATE LISTS IF FOLLOWER 
         # ---------------------------------------------------
         # !!!!TO DO!!!!!
-        if self.leader != 0:
+        if self.leader != "":
             positions = self.updated_trajectory(positions, self.follower_number, self.dt)
         else:
             pass
@@ -360,18 +462,19 @@ class Drone_Two(Node):
                 target_y = positions[self.position_change][1]
                 
                 # Telling to move to the next position after the first has been reached
-                if self.vehicle_local_position.x - positions[self.position_change][0] < margin and \
-                        self.vehicle_local_position.y - positions[self.position_change][1] < margin:
-                    self.position_change += 1
+                
 
-                # Adding the offset if it is a follower drone 
-                if self.leader != 0:
+                ## Adding the offset if it is a follower drone 
+                if self.leader != "":
                     offset_x = self.coordinate_transform[0] 
                     offset_y = self.coordinate_transform[1]
                 else:
                     offset_x = 0.0
                     offset_y = 0.0
 
+                if (self.vehicle_local_position.x - offset_x) - positions[self.position_change][0] < margin and \
+                        (self.vehicle_local_position.y - offset_y) - positions[self.position_change][1] < margin:
+                    self.position_change += 1
                 # Publishing ! :D
                 self.publish_position_setpoint(target_x+offset_x, target_y+offset_y, self.takeoff_height)
             
