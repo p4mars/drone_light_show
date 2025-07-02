@@ -254,7 +254,7 @@ class Drone_Three(Node):
         self.custom_msg = msg
         self.leader = msg.follower_of
         self.follower_number = msg.follower_number 
-        self.get_logger().info(f"Received message: leader={self.custom_msg.leader}, color={self.custom_msg.light_colour}")
+        self.get_logger().info(f"Received message: leader={self.custom_msg.follower_of}, color={self.custom_msg.light_colour}")
         self.drone_name = msg.drone_name
 
         # Needed for frame transformation 
@@ -384,7 +384,7 @@ class Drone_Three(Node):
         # Subscribe to the TC topic to see if you have a follower 
         # -----------------------------------------
 
-        #self.get_logger().info(f"Received message: leader={self.leader}, color={msg.light_colour}")
+        self.get_logger().info(f"Received message: leader={self.custom_msg.follower_of}, color={self.custom_msg.light_colour}")
         
         ######## Assign the leader and follower relationships and the light colour ##########
         self.leader = self.custom_msg.follower_of

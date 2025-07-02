@@ -79,6 +79,12 @@ class Drone_One(Node):
         # State variables
         #---------------------------------------
         self.custom_msg = Drone1Info()
+        self.leader = self.custom_msg.follower_of
+        self.colour = self.custom_msg.light_colour
+        self.follower_number = self.custom_msg.follower_number
+        self.drone_name = self.custom_msg.drone_name
+
+
         self.vehicle_status = VehicleStatus()
         self.vehicle_local_position = VehicleLocalPosition()
         self.leader_vehicle_local_position = self.vehicle_local_position # Placeholder for leader's local position if needed
@@ -260,11 +266,6 @@ class Drone_One(Node):
         
         """Handle incoming custom messages"""
         self.custom_msg = msg
-        self.leader = msg.follower_of
-        self.follower_number = msg.follower_number
-        self.colour = self.custom_msg.light_colour 
-        self.get_logger().info(f"Received message: leader={self.leader}, color={msg.light_colour}")
-        self.drone_name = msg.drone_name
 
         # Needed for frame transformation 
         if self.leader == "":
@@ -395,7 +396,7 @@ class Drone_One(Node):
         # TO DO!!!!!!!
         # Subscribe to the TC topic to see if you have a follower 
         # -----------------------------------------
-        #self.get_logger().info(f"Received message: leader={self.leader}, color={msg.light_colour}")
+        self.get_logger().info(f"Received message: leader={self.custom_msg.follower_of}, color={self.custom_msg.light_colour}")
 
 
         ######## Assign the leader and follower relationships and the light colour ##########
@@ -413,6 +414,7 @@ class Drone_One(Node):
         # LIGHT FUNCTIONALITY 
         print("fine")
         self.light_control(funct, self.colour)
+        print("goob")
 
         ## ---------------------------------------------------
         ## PHASE 1: Initialisation (first 5 seconds)
