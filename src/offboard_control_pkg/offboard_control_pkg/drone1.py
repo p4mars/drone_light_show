@@ -412,9 +412,9 @@ class Drone_One(Node):
         self.publish_offboard_control_heartbeat_signal()
         
         # LIGHT FUNCTIONALITY 
-        print("fine")
+        #print("fine")
         self.light_control(funct, self.colour)
-        print("goob")
+        #print("goob")
 
         ## ---------------------------------------------------
         ## PHASE 1: Initialisation (first 5 seconds)
