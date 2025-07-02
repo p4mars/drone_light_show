@@ -353,9 +353,14 @@ class Drone_Three(Node):
         origin_delta_latitude = follower_latitude - leader_latitude
         origin_delta_longitude = follower_longitude - leader_longitude
 
+        self.get_logger().info(f"")
+        self.get_logger().info(f"")
         self.get_logger().info(f"coordinate transform for follower: {[origin_delta_latitude, origin_delta_longitude]}") #, delta_altitude]}")
+        self.get_logger().info(f"")
+        self.get_logger().info(f"")
         
         # x offset - longitude, y offset - latitude
+        
         self.coordinate_transform = [origin_delta_longitude, origin_delta_latitude] 
 
     # Update the trajectory for the follower drone
@@ -380,7 +385,8 @@ class Drone_Three(Node):
         # Subscribe to the TC topic to see if you have a follower 
         # -----------------------------------------
 
-        self.get_logger().info(f"Received message: leader={self.custom_msg.follower_of}, color={self.custom_msg.light_colour}")
+        if self.offboard_setpoint_counter < 10:
+            self.get_logger().info(f"Received message: leader={self.custom_msg.follower_of}, color={self.custom_msg.light_colour}")
         
         ######## Assign the leader and follower relationships and the light colour ##########
         self.leader = self.custom_msg.follower_of
@@ -388,7 +394,7 @@ class Drone_Three(Node):
         self.colour = self.custom_msg.light_colour # light colour
         ###############
         
-        print(f"Leader: {self.leader}, Follower number: {self.follower_number}, Colour: {self.colour}")
+        #print(f"Leader: {self.leader}, Follower number: {self.follower_number}, Colour: {self.colour}")
         #print(self.colour)
         funct = "blink_slow" # light function
 
@@ -396,7 +402,7 @@ class Drone_Three(Node):
         
         # LIGHT FUNCTIONALITY 
         #print("fine")
-        self.light_control(funct, self.colour)
+        #self.light_control(funct, self.colour)
         #print("goob")
 
         ## ---------------------------------------------------

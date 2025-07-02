@@ -369,7 +369,11 @@ class Drone_One(Node):
         origin_delta_latitude = follower_latitude - leader_latitude
         origin_delta_longitude = follower_longitude - leader_longitude
 
+        self.get_logger().info(f"")
+        self.get_logger().info(f"")
         self.get_logger().info(f"coordinate transform for follower: {[origin_delta_latitude, origin_delta_longitude]}") #, delta_altitude]}")
+        self.get_logger().info(f"")
+        self.get_logger().info(f"")
         
         # x offset - longitude, y offset - latitude
         self.coordinate_transform = [origin_delta_longitude, origin_delta_latitude] 
@@ -396,7 +400,8 @@ class Drone_One(Node):
         # TO DO!!!!!!!
         # Subscribe to the TC topic to see if you have a follower 
         # -----------------------------------------
-        self.get_logger().info(f"Received message: leader={self.custom_msg.follower_of}, color={self.custom_msg.light_colour}")
+        if self.offboard_setpoint_counter < 10:
+            self.get_logger().info(f"Received message: leader={self.custom_msg.follower_of}, color={self.custom_msg.light_colour}")
 
 
         ######## Assign the leader and follower relationships and the light colour ##########
@@ -405,7 +410,7 @@ class Drone_One(Node):
         self.colour = self.custom_msg.light_colour # light colour
         ###############
         
-        print(f"Leader: {self.leader}, Follower number: {self.follower_number}, Colour: {self.colour}")
+        #print(f"Leader: {self.leader}, Follower number: {self.follower_number}, Colour: {self.colour}")
         #print(self.colour)
         funct = "blink_slow" # light function
 
@@ -413,7 +418,7 @@ class Drone_One(Node):
         
         # LIGHT FUNCTIONALITY 
         #print("fine")
-        self.light_control(funct, self.colour)
+        #self.light_control(funct, self.colour)
         #print("goob")
 
         ## ---------------------------------------------------
