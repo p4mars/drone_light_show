@@ -389,18 +389,19 @@ class Drone_Three(Node):
         ######## Assign the leader and follower relationships and the light colour ##########
         self.leader = self.custom_msg.follower_of
         self.follower_number = self.custom_msg.follower_number
-        colour = self.custom_msg.light_colour # light colour
+        self.colour = self.custom_msg.light_colour # light colour
         ###############
-
-
-        print(f"Leader: {self.leader}, Follower number: {self.follower_number}, Colour: {colour}")
-        print(colour)
+        
+        print(f"Leader: {self.leader}, Follower number: {self.follower_number}, Colour: {self.colour}")
+        print(self.colour)
         funct = "blink_slow" # light function
 
         self.publish_offboard_control_heartbeat_signal()
         
         # LIGHT FUNCTIONALITY 
-        self.light_control(funct, colour)
+        print("fine")
+        self.light_control(funct, self.colour)
+        print("goob")
 
         ## ---------------------------------------------------
         ## PHASE 1: Initialisation (first 5 seconds)
