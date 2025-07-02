@@ -252,10 +252,6 @@ class Drone_Two(Node):
 
         """Handle incoming custom messages"""
         self.custom_msg = msg
-        self.leader = msg.follower_of
-        self.follower_number = msg.follower_number 
-        self.get_logger().info(f"Received message: leader={self.leader}, color={msg.light_colour}")
-        self.drone_name = msg.drone_name
 
         # Needed for frame transformation 
         if self.leader == "":
@@ -266,7 +262,7 @@ class Drone_Two(Node):
             #self.global_position_callback, qos_profile)
 
             self.leader_vehicle_local_position_subscriber = self.create_subscription(
-            VehicleLocalPosition, f'{self.leader}/fmu/out/vehicle_local_position',
+            VehicleLocalPosition, f'{self.custom_msg.follower_of}/fmu/out/vehicle_local_position',
             self.vehicle_local_position_callback, qos_profile)
 
             self.leader_vehicle_local_position = VehicleLocalPosition()    

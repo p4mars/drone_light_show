@@ -276,7 +276,7 @@ class Drone_One(Node):
             #self.global_position_callback, qos_profile)
 
             self.leader_vehicle_local_position_subscriber = self.create_subscription(
-            VehicleLocalPosition, f'{self.leader}/fmu/out/vehicle_local_position',
+            VehicleLocalPosition, f'{self.custom_msg.follower_of}/fmu/out/vehicle_local_position',
             self.vehicle_local_position_callback, qos_profile)
 
             self.leader_vehicle_local_position = VehicleLocalPosition()    
