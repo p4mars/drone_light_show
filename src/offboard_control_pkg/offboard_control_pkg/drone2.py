@@ -392,7 +392,7 @@ class Drone_Two(Node):
         ###############
         
         print(f"Leader: {self.leader}, Follower number: {self.follower_number}, Colour: {self.colour}")
-        print(self.colour)
+        #print(self.colour)
         funct = "blink_slow" # light function
 
         self.publish_offboard_control_heartbeat_signal()
