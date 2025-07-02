@@ -16,6 +16,8 @@ class Drone_One(Node):
 
         self.leader = "" #px4_2, px4_3
         self.follower_number = None
+        self.colour = ""
+        self.drone_name = ""
 
         # Configure QoS profile for publishing and subscribing
         qos_profile = QoSProfile(
@@ -234,7 +236,7 @@ class Drone_One(Node):
 
     # Landing vehicle command
     def land(self):
-        self.publish_vehicle_command(self.vehicle_status.system_id,VehicleCommand.VEHICLE_CMD_NAV_LAND)
+        self.publish_vehicle_command(self.vehicle_status.system_id, VehicleCommand.VEHICLE_CMD_NAV_LAND)
         self.get_logger().info("Switching to land mode")
 
     ####################################################
@@ -259,7 +261,8 @@ class Drone_One(Node):
         """Handle incoming custom messages"""
         self.custom_msg = msg
         self.leader = msg.follower_of
-        self.follower_number = msg.follower_number 
+        self.follower_number = msg.follower_number
+        self.colour = self.custom_msg.light_colour 
         self.get_logger().info(f"Received message: leader={self.leader}, color={msg.light_colour}")
         self.drone_name = msg.drone_name
 
@@ -398,17 +401,18 @@ class Drone_One(Node):
         ######## Assign the leader and follower relationships and the light colour ##########
         self.leader = self.custom_msg.follower_of
         self.follower_number = self.custom_msg.follower_number
-        colour = self.custom_msg.light_colour # light colour
+        self.colour = self.custom_msg.light_colour # light colour
         ###############
         
-        print(f"Leader: {self.leader}, Follower number: {self.follower_number}, Colour: {colour}")
-        print(colour)
+        print(f"Leader: {self.leader}, Follower number: {self.follower_number}, Colour: {self.colour}")
+        print(self.colour)
         funct = "blink_slow" # light function
 
         self.publish_offboard_control_heartbeat_signal()
         
         # LIGHT FUNCTIONALITY 
-        self.light_control(funct, colour)
+        print("fine")
+        self.light_control(funct, self.colour)
 
         ## ---------------------------------------------------
         ## PHASE 1: Initialisation (first 5 seconds)

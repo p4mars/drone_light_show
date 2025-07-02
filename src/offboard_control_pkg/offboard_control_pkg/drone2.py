@@ -385,7 +385,7 @@ class Drone_Two(Node):
         # -----------------------------------------
 
         ######## Assign the leader and follower relationships and the light colour ##########
-        self.leader = self.custom_msg.follower
+        self.leader = self.custom_msg.follower_of
         self.follower_number = self.custom_msg.follower_number
         colour = self.custom_msg.light_colour # light colour
         funct = "blink_slow" # light function

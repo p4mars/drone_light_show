@@ -211,25 +211,25 @@ class Drone_Three(Node):
 
     #Arming the vehicle by sending the command
     def arm(self):
-        self.publish_vehicle_command(
+        self.publish_vehicle_command(self.vehicle_status.system_id,
             VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=1.0)
         self.get_logger().info('Arm command sent')
 
     # Disarming the vehicle by sending the command
     def disarm(self):
-        self.publish_vehicle_command(
+        self.publish_vehicle_command(self.vehicle_status.system_id,
             VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=0.0)
         self.get_logger().info('Disarm command sent')
 
     # Offboard mode vehicle command
     def engage_offboard_mode(self):
-        self.publish_vehicle_command(
+        self.publish_vehicle_command(self.vehicle_status.system_id,
             VehicleCommand.VEHICLE_CMD_DO_SET_MODE, param1=1.0, param2=6.0)
         self.get_logger().info("Switching to offboard mode")
 
     # Landing vehicle command
     def land(self):
-        self.publish_vehicle_command(VehicleCommand.VEHICLE_CMD_NAV_LAND)
+        self.publish_vehicle_command(self.vehicle_status.system_id, VehicleCommand.VEHICLE_CMD_NAV_LAND)
         self.get_logger().info("Switching to land mode")
 
     #### Callback functions for the custom subscribers
@@ -254,7 +254,7 @@ class Drone_Three(Node):
         self.custom_msg = msg
         self.leader = msg.follower_of
         self.follower_number = msg.follower_number 
-        self.get_logger().info(f"Received message: leader={self.leader}, color={msg.light_colour}")
+        self.get_logger().info(f"Received message: leader={self.custom_msg.leader}, color={self.custom_msg.light_colour}")
         self.drone_name = msg.drone_name
 
         # Needed for frame transformation 
@@ -387,7 +387,7 @@ class Drone_Three(Node):
         #self.get_logger().info(f"Received message: leader={self.leader}, color={msg.light_colour}")
         
         ######## Assign the leader and follower relationships and the light colour ##########
-        self.leader = self.custom_msg.leader
+        self.leader = self.custom_msg.follower_of
         self.follower_number = self.custom_msg.follower_number
         colour = self.custom_msg.light_colour # light colour
         ###############

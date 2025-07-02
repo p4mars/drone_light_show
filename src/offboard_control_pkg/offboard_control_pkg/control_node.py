@@ -74,7 +74,7 @@ class ControlNode(Node):
         msg.drone_name = self.namespace[drone_index] # Assign the drone name based on the index
         
         # If the drone is a leader, it is not following anything
-        if matrix[drone_index][2] == 0:
+        if matrix[drone_index][1] == 0:
             msg.follower_of = "" ### Assign an empty string if the drone does not follow anything
             msg.light_colour = seq_colours[0]
         
