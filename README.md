@@ -73,7 +73,7 @@ source ros2_ws/install/setup.bash
 
 This builds all the folders under /src using the sourced toolchain. To run the example to ensure your set up was done correctly please refer to the [official PX4 documentation](https://docs.px4.io/main/en/ros2/user_guide.html#running-the-example). 
 
-## Establishing Communication between the Agent and the Client 
+## Establishing Communication between the Agents and the Client 
 PX4 is the autopilot firmware which acts as the flight control for the drone. This firmware includes many flight modes that help with the control of the drone such as holding attitude, acrobatic mode for drone racing but also autonomous modes such as return-to-launch and an offboard mode. This offboard mode will be used for this simulation. The [offboard mode](https://docs.px4.io/main/en/flight_modes/offboard.html) allows the companion computer on the drone to take over its operation autonomously by giving the controller control inputs. For us, this is the ROS2 framework that we develop. On the drone, there is a client which allows communication with our ROS2 network. The client communicates with [uORB](https://docs.px4.io/main/en/msg_docs/) topics in the PX4 firmware to turn the commands into code. Our ROS2 network communicates with this client through the agent. This communication link can be seen in the image below. The set up of the client and agent has already been done when building the development environment. 
 
 ![image](https://github.com/user-attachments/assets/1a828b53-ca2c-4274-822d-ad8c367571f2)
@@ -147,5 +147,94 @@ If everything went well, the following messages are displayed to indicate that t
 ```
 
 Switch to the Gazebo GUI to watch the simulation!
+
+
+### Running the Simulation for Multiple Drones
+
+Hopefully you managed to get the single drone version of the simulation running and want to look at the final multi-drone multi-node lightshow simulation. If that is the case, you can follow the steps similar, but ever-so-slightly different from the ones taken previously. **This builds upon the steps taken for the single drone simulation so make sure that it has worked before continuing with the steps here.**
+
+The steps to launch the multi-node simulation are as follows:
+
+1. First, open the multi-node branch of this github repository in your favourite code editor (preferrably VS Code like before).
+2. Source the ROS 2 development environment into the current terminal and compile the workspace using colcon. Please keep in mind that this may take some time like in the single drone case. 
+```
+  source /opt/ros/humble/setup.bash
+  colcon build
+```
+2.a. If you have already built the package using colcon build and need to implement changes to a file, rebuild the changed file by doing:
+```
+colcon build --packages-select <NAME_OF_PACKAGE>
+```
+3. Source your directory to access the newly built (or rebuilt) package by typing the following two lines:
+```
+cd ..
+source ros2_ws/install/setup.bash
+```
+## Establishing Communication between the Agents and the Client 
+The procedure is similar to the one before, with the addition of having to launch multiple drones in multiple separate terminals. The steps are as follows:
+
+1. Start the agent in a designated terminal
+```bash
+MicroXRCEAgent udp4 -p 8888
+```
+2. In a new (third) terminal, start a PX4-Gazebo simulation with the drone in the PX4-Autopilot directory.
+```bash
+cd ..
+cd PX4-Autopilot
+PX4_SYS_AUTOSTART=4001 PX4_SIM_MODEL=gz_x500 ./build/px4_sitl_default/bin/px4 -i 1
+```
+It is clear that the command for launching the drone is slightly different now **DESCRIBE THE FUNCTION OF THE NEW THINGS**
+
+Like before, we need to set some of the parameters of the simulation in order for the drones to fly. 
+
+2.a. Once the terminal displays the following message:
+```
+INFO  [px4] Startup script returned successfully
+pxh> ...
+```
+2.b. On a new line, input the command below to bypass certain pre-arming checks that are not applicable for this simulation.
+```
+param import /home/ros/ros2_ws/working.params
+```
+
+Continue by launching the other two drones analogously - but pay attention to things like the model poses (their starting coordinates) and the instance numbers at the end of the command lines (-i 2 and -i 3 respectively):
+
+3. In a new (fourth) terminal, launch the **SECOND** drone in the PX4-Autopilot directory.
+```bash
+cd ..
+cd PX4-Autopilot
+PX4_GZ_STANDALONE=1 PX4_SYS_AUTOSTART=4001 PX4_GZ_MODEL_POSE="0,1" PX4_SIM_MODEL=gz_x500 ./build/px4_sitl_default/bin/px4 -i 2
+```
+3.a. **!** Don't forget to specify the simulation parameters by inserting the following line after the same terminal message as before:
+```
+param import /home/ros/ros2_ws/working.params
+```
+4. In a new  (fifth) terminal, launch the **THIRD** drone in the PX4-Autopilot directory.
+```bash
+cd ..
+cd PX4-Autopilot
+PX4_GZ_STANDALONE=1 PX4_SYS_AUTOSTART=4001 PX4_GZ_MODEL_POSE="0,2" PX4_SIM_MODEL=gz_x500 ./build/px4_sitl_default/bin/px4 -i 3
+```
+
+4.a. **!** Don't forget to specify the simulation parameters by inserting the following line:
+```
+param import /home/ros/ros2_ws/working.params
+```
+
+### Running the Simulation
+
+1. Open a new terminal and source ROS2 and the ROS2 workspace
+```
+cd ..
+source /opt/ros/humble/setup.bash
+source ~/ros2_ws/install/setup.bash
+```
+
+2. Once everything has been sourced, you can now launch the simulation. 
+```
+cd ros2_ws
+ros2 launch offboard_control_pkg offboard_control_launch_file.launch.py
+```
+
 
 For more information about our development and how to run our simulation, please refer to our [wiki](https://github.com/p4mars/drone_light_show/wiki).
