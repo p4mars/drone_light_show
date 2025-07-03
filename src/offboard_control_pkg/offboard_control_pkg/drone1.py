@@ -415,11 +415,7 @@ class Drone_One(Node):
         funct = "blink_slow" # light function
 
         self.publish_offboard_control_heartbeat_signal()
-        
-        # LIGHT FUNCTIONALITY 
-        #print("fine")
-        #self.light_control(funct, self.colour)
-        #print("goob")
+    
 
         ## ---------------------------------------------------
         ## PHASE 1: Initialisation (first 5 seconds)
@@ -427,6 +423,8 @@ class Drone_One(Node):
         ## Will takeoff and maintain position for 5 seconds
         ## ---------------------------------------------------
 
+
+        ####### Establishing the frame transform between the leader and the follower frames
         if self.offboard_setpoint_counter == 1:
             if self.leader != "":
                     #### If the drone is a follower (if the drone has a leader), calculate the frame transform
@@ -435,6 +433,11 @@ class Drone_One(Node):
             else:
                 pass
 
+        # LIGHT FUNCTIONALITY 
+        if self.offboard_setpoint_counter == 10:
+            self.light_control(funct, self.colour)
+
+        ##### Take-off procedure #####
         if self.offboard_setpoint_counter < 100:
             # ~10 seconds at 10Hz timer
             # Publish setpoint continuously
@@ -484,9 +487,7 @@ class Drone_One(Node):
                 target_y = positions[self.position_change][1]
                 
                 # Telling to move to the next position after the first has been reached
-                if self.vehicle_local_position.x - positions[self.position_change][0] < margin and \
-                        self.vehicle_local_position.y - positions[self.position_change][1] < margin:
-                    self.position_change += 1
+                
 
                 # Adding the offset if it is a follower drone 
                 if self.leader != "":
@@ -495,6 +496,10 @@ class Drone_One(Node):
                 else:
                     offset_x = 0.0
                     offset_y = 0.0
+                
+                if (self.vehicle_local_position.x - offset_x) - positions[self.position_change][0] < margin and \
+                        (self.vehicle_local_position.y - offset_y) - positions[self.position_change][1] < margin:
+                    self.position_change += 1
 
                 # Publishing ! :D
                 self.publish_position_setpoint(target_x+offset_x, target_y+offset_y, self.takeoff_height)
