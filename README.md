@@ -170,7 +170,7 @@ colcon build --packages-select <NAME_OF_PACKAGE>
 cd ..
 source ros2_ws/install/setup.bash
 ```
-## Establishing Communication between the Agents and the Client 
+## Establishing Communication between the Agent and the Clients 
 The procedure is similar to the one before, with the addition of having to launch multiple drones in multiple separate terminals. The steps are as follows:
 
 1. Start the agent in a designated terminal
