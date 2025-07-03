@@ -149,7 +149,7 @@ If everything went well, the following messages are displayed to indicate that t
 Switch to the Gazebo GUI to watch the simulation!
 
 
-### Running the Simulation for Multiple Drones
+# Running the Simulation for Multiple Drones
 
 Hopefully you managed to get the single drone version of the simulation running and want to look at the final multi-drone multi-node lightshow simulation. If that is the case, you can follow the steps similar, but ever-so-slightly different from the ones taken previously. **This builds upon the steps taken for the single drone simulation so make sure that it has worked before continuing with the steps here.**
 
@@ -221,7 +221,7 @@ PX4_GZ_STANDALONE=1 PX4_SYS_AUTOSTART=4001 PX4_GZ_MODEL_POSE="0,2" PX4_SIM_MODEL
 param import /home/ros/ros2_ws/working.params
 ```
 
-### Running the Simulation
+## Running the Simulation
 
 1. Open a new terminal and source ROS2 and the ROS2 workspace
 ```
