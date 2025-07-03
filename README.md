@@ -183,9 +183,16 @@ cd ..
 cd PX4-Autopilot
 PX4_SYS_AUTOSTART=4001 PX4_SIM_MODEL=gz_x500 ./build/px4_sitl_default/bin/px4 -i 1
 ```
-It is clear that the command for launching the drone is slightly different now **DESCRIBE THE FUNCTION OF THE NEW THINGS**
+It is clear that the command for launching the drone is slightly different now. Here and in the launch command of the other two drones, the following arguments are used:
+  -PX4_SYS_AUTOSTART (Mandatory): Sets the airframe autostart id of the PX4 airframe to start.
+  -PX4_GZ_MODEL_POSE: Sets the spawning position and orientation of the model when PX4_SIM_MODEL is adopted. If provided, the startup script spawns the model at a pose following the syntax "x,y,z,roll,pitch,yaw", where the positions are given in metres and the angles are in radians.
+    If omitted, the zero pose [0,0,0,0,0,0] is used.
+    If less then 6 values are provided, the missing ones are fixed to zero. (- this is used here by only specifying the x and y positions of the drone)
+  -PX4_GZ_STANDALONE: Lets PX4 know that it should not launch an instance of Gazebo.
+  - The last "item" in the command is "-i 1"; this specifies the instance of the launched drone, which are 1, 2, and 3 for the three launched drones in this simulation.
+      - The simulation then autiomatically generates a name for the drones, which is based on the instance number - for drone 1 with instance 1, it is "px4_1". Thus it is important to only use instances 1, 2, and 3 in this simulation as this sets up the relationships and the publisher/subscriber relationships in the background.
 
-Like before, we need to set some of the parameters of the simulation in order for the drones to fly. 
+Going further; like before, we need to set some of the parameters of the simulation in order for the drones to fly. 
 
 2.a. Once the terminal displays the following message:
 ```
