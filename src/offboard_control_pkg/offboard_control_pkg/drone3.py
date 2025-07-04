@@ -372,7 +372,7 @@ class Drone_Three(Node):
     # Update the trajectory for the follower drone
     def updated_trajectory(self, setpoints: list, follower_number: int, dt: float) -> list:
         # THREE SECOND DELAY
-        extra_points = 3*follower_number/dt # 3 seconds of delay
+        extra_points = 10*follower_number/dt # 3 seconds of delay
 
         # Add extra points to the front of the setpoints to create a delay
         new_points = []
