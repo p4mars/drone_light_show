@@ -263,9 +263,15 @@ class Drone_Two(Node):
 
             self.leader_vehicle_local_position_subscriber = self.create_subscription(
             VehicleLocalPosition, f'{self.custom_msg.follower_of}/fmu/out/vehicle_local_position',
-            self.vehicle_local_position_callback, qos_profile)
+            self.leader_vehicle_local_position_callback, qos_profile)
 
-            self.leader_vehicle_local_position = VehicleLocalPosition()    
+            #self.get_logger().info(f"Leader vehicle local position is: {self.leader_vehicle_local_position}") 
+    
+    ####################################################    
+    # Callback for leader's vehicle local position
+    def leader_vehicle_local_position_callback(self, msg):
+        self.leader_vehicle_local_position = msg
+  
     ####################################################    
 
     # Light control command 
@@ -324,6 +330,9 @@ class Drone_Two(Node):
 
     # Calculating the position change in the local frame of the leader
     def follower_frame_transform(self):
+        #self.get_logger().info(f"the leader is: {self.custom_msg.follower_of}")
+        #self.get_logger().info(f"Leader reference position: {self.leader_vehicle_local_position.ref_lat}, {self.leader_vehicle_local_position.ref_lon}")
+        #self.get_logger().info(f"Follower reference position: {self.vehicle_local_position.ref_lat}, {self.vehicle_local_position.ref_lon}")
         leader_latitude_origin = self.leader_vehicle_local_position.ref_lat
         leader_longitude_origin = self.leader_vehicle_local_position.ref_lon
 
@@ -353,11 +362,8 @@ class Drone_Two(Node):
         origin_delta_latitude = follower_latitude - leader_latitude
         origin_delta_longitude = follower_longitude - leader_longitude
 
-        self.get_logger().info(f"")
-        self.get_logger().info(f"")
         self.get_logger().info(f"coordinate transform for follower: {[origin_delta_latitude, origin_delta_longitude]}") #, delta_altitude]}")
-        self.get_logger().info(f"")
-        self.get_logger().info(f"")
+        
         # x offset - longitude, y offset - latitude
         self.coordinate_transform = [origin_delta_latitude, origin_delta_longitude] 
 
@@ -369,11 +375,7 @@ class Drone_Two(Node):
         # Add extra points to the front of the setpoints to create a delay
         new_points = []
         for i in np.arange(extra_points):
-            new_points.append([0.0, 0.0, 0.0])
-
-        new_points = np.array(new_points) # Convert to numpy array for easier manipulation
-        new_points += self.coordinate_transform # Add the coordinate transform to the new points to take the later coordinate transform into account
-        new_points = new_points.tolist()  # Convert back to list for concatenation
+            new_points.append([self.coordinate_transform[0], self.coordinate_transform[1], self.takeoff_height])
 
         # Concatenate the new points to the front of the setpoints
         setpoints = new_points + setpoints
@@ -411,16 +413,19 @@ class Drone_Two(Node):
 
 
         ####### Establishing the frame transform between the leader and the follower frames
-        if self.offboard_setpoint_counter == 1:
+
+        #### Wait until the offboard_setpoint_counter reaches 10
+        #### This is to ensure that the drone has enough time to switch to offboard mode and receive the necessary information about its leader to perform the frame transformation
+        if self.offboard_setpoint_counter == 10:
+            
             if self.leader != "":
                     #### If the drone is a follower (if the drone has a leader), calculate the frame transform
                     self.follower_frame_transform()
                     ##### results is self.coordinate_transform which has the form [x_offset, y_offset] in meters
             else:
                 pass
-
-        # LIGHT FUNCTIONALITY 
-        if self.offboard_setpoint_counter == 10:
+            
+            # LIGHT FUNCTIONALITY 
             self.light_control(funct, self.colour)
 
 
@@ -482,8 +487,8 @@ class Drone_Two(Node):
                     offset_x = 0.0
                     offset_y = 0.0
 
-                if (self.vehicle_local_position.x - offset_x) - positions[self.position_change][0] < margin and \
-                        (self.vehicle_local_position.y - offset_y) - positions[self.position_change][1] < margin:
+                if np.abs((self.vehicle_local_position.x + offset_x) - positions[self.position_change][0]) < margin and \
+                        np.abs((self.vehicle_local_position.y + offset_y) - positions[self.position_change][1]) < margin:
                     self.position_change += 1
                 # Publishing ! :D
                 self.publish_position_setpoint(target_x - offset_x, target_y - offset_y, self.takeoff_height)
