@@ -459,7 +459,7 @@ class Drone_Two(Node):
         positions = self.flame_path # Using the flame path as the trajectory for the drone, offset for the local frame of the leader
         
         ### Margin for positional accuracy in order to proceed to the next point
-        margin = 0.2 # 0.2m accuracy margin
+        margin = 1.0 # potitional accuracy margin
 
         # ---------------------------------------------------
         # CONCATENATE LISTS IF FOLLOWER 

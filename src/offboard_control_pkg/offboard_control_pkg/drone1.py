@@ -475,7 +475,7 @@ class Drone_One(Node):
         positions = self.flame_path  # Convert back to list for execution
 
         ### Margin for positional accuracy in order to proceed to the next point
-        margin = 0.2 # 0.2m accuracy margin
+        margin = 1.0 # positional accuracy margin
 
         # ---------------------------------------------------
         # CONCATENATE LISTS IF FOLLOWER 
