@@ -359,7 +359,7 @@ class Drone_Two(Node):
         self.get_logger().info(f"")
         self.get_logger().info(f"")
         # x offset - longitude, y offset - latitude
-        self.coordinate_transform = [origin_delta_longitude, origin_delta_latitude] 
+        self.coordinate_transform = [origin_delta_latitude, origin_delta_longitude] 
 
     # Update the trajectory for the follower drone
     def updated_trajectory(self, setpoints: list, follower_number: int, dt: float) -> list:
@@ -370,6 +370,10 @@ class Drone_Two(Node):
         new_points = []
         for i in np.arange(extra_points):
             new_points.append([0.0, 0.0, 0.0])
+
+        new_points = np.array(new_points) # Convert to numpy array for easier manipulation
+        new_points += self.coordinate_transform # Add the coordinate transform to the new points to take the later coordinate transform into account
+        new_points = new_points.tolist()  # Convert back to list for concatenation
 
         # Concatenate the new points to the front of the setpoints
         setpoints = new_points + setpoints
