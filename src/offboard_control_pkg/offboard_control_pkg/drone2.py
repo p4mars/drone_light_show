@@ -391,7 +391,7 @@ class Drone_Two(Node):
         for x in section_1_x_points:
             path_to_flame.append([x, 1.0, self.takeoff_height])
         
-        section_2_length = 11.0
+        section_2_length = 9.0
         section_2_y_points = np.linspace(1.0, section_2_length, 21) ## second path section with 0.5m increments
         for y in section_2_y_points:
             path_to_flame.append([section_1_length, y, self.takeoff_height])
@@ -428,7 +428,7 @@ class Drone_Two(Node):
         
         #print(f"Leader: {self.leader}, Follower number: {self.follower_number}, Colour: {self.colour}")
         #print(self.colour)
-        funct = "blink_slow" # light function
+        funct = "on" # light function
 
         self.publish_offboard_control_heartbeat_signal()
         
