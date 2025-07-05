@@ -196,18 +196,18 @@ class Drone_One(Node):
         
         flame_path = np.array(flame_path) # Converting to numpy array for easier manipulation
         # Flip the y-axis to make the origin (0,0) start at the bottom-left
-        flame_points_x = np.max(flame_path[:, 1]) - flame_path[:, 1] # x-coordinates in the NED frame, with the origin at the bottom-left (positive up) instead of top-left (positive down) as originally
-        flame_points_y = flame_path[:,0] # y-coordinates in the NED frame
+        flame_points_y = np.max(flame_path[:, 1]) - flame_path[:, 1] # y-coordinates in the NED frame, with the origin at the bottom-left (positive up) instead of top-left (positive down) as originally
+        flame_points_x = -flame_path[:,0] # x-coordinates in the NED frame
         flame_path = np.column_stack((flame_points_x, flame_points_y))  # Combine x and y coordinates into a single array again
 
-        # Normalize the flame path to start from (0,0)
+        # Shift the flame path to start from (0,0)
         flame_path[:, 0] = flame_path[:, 0] - flame_path[0][0] # Normalize to start from (0,:)
         flame_path[:, 1] = flame_path[:, 1] - flame_path[0][1] # Normalize to start from (:,0)
 
         # Scale the flame path to fit in the frame of the world (10mx10m instead of 1200m)
         flame_path = flame_path / np.max(flame_path)  # Scale down to fit in the local frame by scaling everything to 0-1 range
         flame_path = flame_path * 10.0  # Scale the maximum dimension of the flame to 10m for the trajectory
-        flame_path = flame_path.tolist()
+        #flame_path = flame_path.tolist()
 
         self.flame_path = flame_path  # Store the flame path for later use
         
@@ -398,8 +398,32 @@ class Drone_One(Node):
         for i in np.arange(extra_points):
             new_points.append([self.coordinate_transform[0], self.coordinate_transform[1], self.takeoff_height])
 
+        # Add a path to the big flame model in the custom world
+        path_to_flame = [[0.0,1.0, self.takeoff_height]]
+
+        section_1_length = 3.5
+        section_1_x_points = np.linspace(0.0, section_1_length, 7) ## first path section with 0.5m increments
+        for x in section_1_x_points:
+            path_to_flame.append([x, 1.0, self.takeoff_height])
+        
+        section_2_length = 11.0
+        section_2_y_points = np.linspace(1.0, section_2_length, 21) ## second path section with 0.5m increments
+        for y in section_2_y_points:
+            path_to_flame.append([section_1_length, y, self.takeoff_height])
+
+        setpoints_x = [point[0] + section_1_length for point in setpoints]
+        setpoints_y = [ section_2_length for point in setpoints]
+        setpoints_z = [-point[1] + self.takeoff_height for point in setpoints]
+        
+
+        setpoints = np.stack((setpoints_x, setpoints_y, setpoints_z), axis = 1)
+        setpoints = setpoints.tolist()  # Convert to list for concatenation
+
+        #The path back from the flame is the reverse of the path to the flame
+        path_to_start = path_to_flame[::-1]  # Reverse the path to the flame
+        
         # Concatenate the new points to the front of the setpoints
-        setpoints = new_points + setpoints
+        setpoints = new_points + path_to_flame + setpoints + path_to_start
         return setpoints
     
     
@@ -479,7 +503,7 @@ class Drone_One(Node):
         #positions = [[-3.0,0.0,2.0], [0.0,5.196,2.0], [3.0,0.0,2.0], [-3.0,0.0,2.0], [0.0,5.196,2.0], [3.0,0.0,2.0], [-3.0,0.0,2.0], [0.0,5.196,2.0]] # an equilateral triangle example in the leader frame
         
         ### The actual flame path in 2D, which needs to be adjusted to the 3D world
-        positions = self.flame_path  # Convert back to list for execution
+        positions = self.flame_path  
 
         ### Margin for positional accuracy in order to proceed to the next point
         margin = 1.0 # positional accuracy margin
@@ -492,14 +516,14 @@ class Drone_One(Node):
             ##### If the drone is a follower, update the trajectory to include the delay in movement
             positions = self.updated_trajectory(positions, self.follower_number, self.dt)
         else:
-            pass
+            positions = self.updated_trajectory(positions, 0, self.dt) # No delay for the leader drone
 
         # Check if drone is within the positional accuracy margin of its target position
         if self.offboard_setpoint_counter >= 100:        
             if self.position_change < len(positions):    
                 target_x = positions[self.position_change][0]
-                target_y = positions[self.position_change][1]
-                
+                target_y = positions[self.position_change][1]  
+                target_z = positions[self.position_change][2] # z is negative in NED frame
                 # Telling to move to the next position after the first has been reached
                 
 
@@ -511,12 +535,13 @@ class Drone_One(Node):
                     offset_x = 0.0
                     offset_y = 0.0
                 
-                if np.abs((self.vehicle_local_position.x + offset_x) - positions[self.position_change][0]) < margin and \
-                        np.abs((self.vehicle_local_position.y + offset_y) - positions[self.position_change][1]) < margin:
+                if np.abs((self.vehicle_local_position.x + offset_x) - target_x) < margin and \
+                        np.abs((self.vehicle_local_position.y + offset_y) - target_y) < margin and \
+                            np.abs(self.vehicle_local_position.z - target_z) < margin:
                     self.position_change += 1
 
                 # Publishing ! :D
-                self.publish_position_setpoint(target_x - offset_x, target_y - offset_y, self.takeoff_height)
+                self.publish_position_setpoint(target_x - offset_x, target_y - offset_y, target_z)
             
             # Beginning landing sequence after all positions have been reached
             else:
