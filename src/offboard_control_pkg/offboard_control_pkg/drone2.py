@@ -183,9 +183,15 @@ class Drone_Two(Node):
         
         flame_path = np.array(flame_path) # Converting to numpy array for easier manipulation
         # Flip the y-axis to make the origin (0,0) start at the bottom-left
-        flame_path[:, 1] = np.max(flame_path[:, 1]) - flame_path[:, 1]
-        flame_path[:,1] = - flame_path[:,1]  # Flip the y-axis for positive downward coordinate system (NED frame)
-        flame_path[:, 0] = flame_path[:, 0] - flame_path[0][0] # Normalize to start from (0,0)
+        flame_points_x = np.max(flame_path[:, 1]) - flame_path[:, 1] # x-coordinates in the NED frame, with the origin at the bottom-left (positive up) instead of top-left (positive down) as originally
+        flame_points_y = flame_path[:,0] # y-coordinates in the NED frame
+        flame_path = np.column_stack((flame_points_x, flame_points_y))  # Combine x and y coordinates into a single array again
+
+        # Normalize the flame path to start from (0,0)
+        flame_path[:, 0] = flame_path[:, 0] - flame_path[0][0] # Normalize to start from (0,:)
+        flame_path[:, 1] = flame_path[:, 1] - flame_path[0][1] # Normalize to start from (:,0)
+
+        # Scale the flame path to fit in the frame of the world (10mx10m instead of 1200m)
         flame_path = flame_path / np.max(flame_path)  # Scale down to fit in the local frame by scaling everything to 0-1 range
         flame_path = flame_path * 10.0  # Scale the maximum dimension of the flame to 10m for the trajectory
         flame_path = flame_path.tolist()
