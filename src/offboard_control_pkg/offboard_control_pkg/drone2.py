@@ -193,7 +193,7 @@ class Drone_Two(Node):
 
         # Scale the flame path to fit in the frame of the world (10mx10m instead of 1200m)
         flame_path = flame_path / np.max(flame_path)  # Scale down to fit in the local frame by scaling everything to 0-1 range
-        flame_path = flame_path * 10.0  # Scale the maximum dimension of the flame to 10m for the trajectory
+        flame_path = flame_path * 8.0  # Scale the maximum dimension of the flame to 10m for the trajectory
         #flame_path = flame_path.tolist()
         self.flame_path = flame_path  # Store the flame path for later use
         
@@ -455,6 +455,8 @@ class Drone_Two(Node):
                 pass
             
             # LIGHT FUNCTIONALITY 
+        
+        if self.offboard_setpoint_counter > 10:
             self.light_control(funct, self.colour)
 
 
