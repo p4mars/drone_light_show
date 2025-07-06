@@ -311,7 +311,7 @@ class Drone_Three(Node):
         msg.color = color_dict[colour]
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
         self.light_control_publisher.publish(msg)
-        self.get_logger().info("Light control command sent")
+        #self.get_logger().info("Light control command sent")
 
     # Sending the messages to change into offboard mode
     # and to set the position setpoint
@@ -378,9 +378,8 @@ class Drone_Three(Node):
     # Update the trajectory for the follower drone
     def updated_trajectory(self, setpoints: list, follower_number: int, dt: float) -> list:
 
-
-        # THREE SECOND DELAY
-        extra_points = 10*follower_number/dt # 3 seconds of delay
+        # TIME DELAY
+        extra_points = 10*follower_number/dt # add a time delay in seconds (assuming a 10Hz timer for dt)
 
         # Add extra points to the front of the setpoints to create a delay
         new_points = []
@@ -523,7 +522,7 @@ class Drone_Three(Node):
                     self.position_change += 1
 
                 # Publishing ! :D
-                self.publish_position_setpoint(target_x - offset_x, target_y - offset_y, self.takeoff_height)
+                self.publish_position_setpoint(target_x - offset_x, target_y - offset_y, target_z)
             
             # Beginning landing sequence after all positions have been reached
             else:

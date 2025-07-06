@@ -324,7 +324,7 @@ class Drone_One(Node):
         msg.color = color_dict[colour]
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
         self.light_control_publisher.publish(msg)
-        self.get_logger().info("Light control command sent")
+        #self.get_logger().info("Light control command sent")
 
     # Sending the messages to change into offboard mode
     # and to set the position setpoint
@@ -390,8 +390,8 @@ class Drone_One(Node):
 
     # Update the trajectory for the follower drone
     def updated_trajectory(self, setpoints: list, follower_number: int, dt: float) -> list:
-        # THREE SECOND DELAY
-        extra_points = 10*follower_number/dt # 10 seconds of delay
+        # TIME DELAY
+        extra_points = 10*follower_number/dt # add a time delay in seconds (assuming a 10Hz timer for dt)
 
         # Add extra points to the front of the setpoints to create a delay
         new_points = []
@@ -412,9 +412,8 @@ class Drone_One(Node):
             path_to_flame.append([section_1_length, y, self.takeoff_height])
 
         setpoints_x = [point[0] + section_1_length for point in setpoints]
-        setpoints_y = [ section_2_length for point in setpoints]
+        setpoints_y = [section_2_length for point in setpoints]
         setpoints_z = [-point[1] + self.takeoff_height for point in setpoints]
-        
 
         setpoints = np.stack((setpoints_x, setpoints_y, setpoints_z), axis = 1)
         setpoints = setpoints.tolist()  # Convert to list for concatenation
