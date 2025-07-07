@@ -22,7 +22,7 @@ USER $ROS_USER
 RUN mkdir -p /home/ros/ros2_ws/src
 
 ###########################################
-
+    
 FROM ros_user_setup AS dev
 
 # Install some dependencies packages
@@ -52,6 +52,8 @@ RUN sudo apt-get update && sudo apt-get upgrade -y \
     # apt clean-up
     && sudo apt-get autoremove -y \
     && sudo rm -rf /var/lib/apt/lists/*
+
+RUN sudo pip3 install py_trees
 
 # Install tools for linting
 RUN sudo pip3 install --no-cache \
