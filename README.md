@@ -80,16 +80,30 @@ PX4 is the autopilot firmware which acts as the flight control for the drone. Th
 
 To establish this communication, the following should be taken:
 
-1. Start the agent in a designated terminal
+1. Start the agent in a designated terminal (2nd terminal)
 ```bash
 MicroXRCEAgent udp4 -p 8888
 ```
-2. In a new terminal, start a PX4-Gazebo simulation with the drone in the PX4-Autopilot directory (you might have to exit the ros2_ws directory by using "cd .." first).
+
+2. In a new (third) terminal, start a PX4-Gazebo simulation with the drone in the PX4-Autopilot directory.
 ```bash
+cd ..
 cd PX4-Autopilot
-PX4_GZ_WORLD=sim_world make px4_sitl gz_x500
+PX4_SYS_AUTOSTART=4001 PX4_SIM_MODEL=gz_x500 PX4_GZ_WORLD=sim_world ./build/px4_sitl_default/bin/px4 -i 1
 ```
-A new pop-up with Gazebo and the X-500 model should show. The agent and client are now running and they should connect.
+  
+  - PX4_SYS_AUTOSTART (Mandatory): Sets the airframe autostart id of the PX4 airframe to start.
+  
+  - PX4_GZ_MODEL_POSE: Sets the spawning position and orientation of the model when PX4_SIM_MODEL is adopted. If provided, the startup script spawns the model at a pose following the syntax "x,y,z,roll,pitch,yaw", where the positions are given in metres and the angles are in radians. (used for the next two drones to make sure they are not placed on top of the previously instantiated drones)
+    - If omitted, the zero pose [0,0,0,0,0,0] is used.
+    - If less then 6 values are provided, the missing ones are fixed to zero. (this is used by only specifying the x and y positions of the two extra drones later on)
+  
+  - PX4_GZ_STANDALONE: Lets PX4 know that it should not launch an instance of Gazebo (used when launching the other two drones).
+
+  - PX4_GZ_WORLD=sim_world: tells the simulation to start in the custom-made gazebo world instead of the default blank one
+  
+  - The last "item" in the command is "-i 1"; this specifies the instance of the launched drone, which are 1, 2, and 3 for the three launched drones in this simulation.
+      - The simulation then automatically generates a name for the drones, which is based on the instance number - for drone 1 with instance 1, it is "px4_1". Thus it is important to only use instances 1, 2, and 3 in this simulation as this sets up the relationships and the publisher/subscriber relationships in the background.
 
 3. The PX4 terminal should display:
 ```
@@ -108,102 +122,13 @@ The Micro XCRE-DDS agent terminal will show the equivalent topics that are creat
   [1675929445.270412] info     | ProxyClient.cpp    | create_topic             | topic created          | client_key: 0x00000001, topic_id: 0x0DF(2), participant_id: 0x001(1)
   ...
 ```
-4. Once the terminal displays the following:
+
+2.a. Once the terminal displays the following message after laucnhing the drone...:
 ```
 INFO  [px4] Startup script returned successfully
 pxh> ...
 ```
-Press enter and input the command (with "pxh>" already provided by the terminal) below to bypass certain pre-arming checks that are not applicable for this simulation.
-```
-pxh> param import /home/ros/ros2_ws/working.params
-```
-After which, the terminal will display some messages, ending with:
-```
-pxh> INFO  [commander] Ready for takeoff!
-```
-Once this displays, you can now move to running the simulation. 
-
-## Running the Simulation
-
-1. Open a new terminal and source ROS2 and the ROS2 workspace
-```
-cd ..
-source /opt/ros/humble/setup.bash
-source ~/ros2_ws/install/setup.bash
-```
-
-2. Once everything has been sourced, you can now launch the simulation. 
-```
-cd ros2_ws
-ros2 launch offboard_control_pkg offboard_control_launch_file.launch.py
-```
-
-If everything went well, the following messages are displayed to indicate that the offboard control node commands are being sent:
-```
-[INFO] [launch]: All log files can be found below /home/ros/.ros/log/2025-05-04-13-38-24-823719-docker-desktop-3154
-[INFO] [launch]: Default logging verbosity is set to INFO
-[INFO] [offboard_control_node-1]: process started with pid [3195]
-...
-```
-
-Switch to the Gazebo GUI to watch the simulation!
-
-
-# Running the Simulation for Multiple Drones
-
-Hopefully you managed to get the single drone version of the simulation running and want to look at the final multi-drone multi-node lightshow simulation. If that is the case, you can follow the steps similar, but ever-so-slightly different from the ones taken previously. **This builds upon the steps taken for the single drone simulation so make sure that it has worked before continuing with the steps here.**
-
-The steps to launch the multi-node simulation are as follows:
-
-1. First, open the multi-node branch of this github repository in your favourite code editor (preferrably VS Code like before).
-2. Source the ROS 2 development environment into the current terminal and compile the workspace using colcon. Please keep in mind that this may take some time like in the single drone case. 
-```
-  source /opt/ros/humble/setup.bash
-  colcon build
-```
-2.a. If you have already built the package using colcon build and need to implement changes to a file, rebuild the changed file by doing:
-```
-colcon build --packages-select <NAME_OF_PACKAGE>
-```
-3. Source your directory to access the newly built (or rebuilt) package by typing the following two lines:
-```
-cd ..
-source ros2_ws/install/setup.bash
-```
-## Establishing Communication between the Agent and the Clients 
-The procedure is similar to the one before, with the addition of having to launch multiple drones in multiple separate terminals. The steps are as follows:
-
-1. Start the agent in a designated terminal
-```bash
-MicroXRCEAgent udp4 -p 8888
-```
-2. In a new (third) terminal, start a PX4-Gazebo simulation with the drone in the PX4-Autopilot directory.
-```bash
-cd ..
-cd PX4-Autopilot
-PX4_SYS_AUTOSTART=4001 PX4_SIM_MODEL=gz_x500 ./build/px4_sitl_default/bin/px4 -i 1
-```
-It is clear that the command for launching the drone is slightly different now. Here and in the launch command of the other two drones, the following arguments are used:
-  
-  - PX4_SYS_AUTOSTART (Mandatory): Sets the airframe autostart id of the PX4 airframe to start.
-  
-  - PX4_GZ_MODEL_POSE: Sets the spawning position and orientation of the model when PX4_SIM_MODEL is adopted. If provided, the startup script spawns the model at a pose following the syntax "x,y,z,roll,pitch,yaw", where the positions are given in metres and the angles are in radians. (used for the next two drones to make sure they are not placed on top of the previously instantiated drones)
-    - If omitted, the zero pose [0,0,0,0,0,0] is used.
-    - If less then 6 values are provided, the missing ones are fixed to zero. (this is used by only specifying the x and y positions of the two extra drones later on)
-  
-  - PX4_GZ_STANDALONE: Lets PX4 know that it should not launch an instance of Gazebo (used when launching the other two drones).
-  
-  - The last "item" in the command is "-i 1"; this specifies the instance of the launched drone, which are 1, 2, and 3 for the three launched drones in this simulation.
-      - The simulation then autiomatically generates a name for the drones, which is based on the instance number - for drone 1 with instance 1, it is "px4_1". Thus it is important to only use instances 1, 2, and 3 in this simulation as this sets up the relationships and the publisher/subscriber relationships in the background.
-
-Going further; like before, we need to set some of the parameters of the simulation in order for the drones to fly. 
-
-2.a. Once the terminal displays the following message after laucnhing the drone:
-```
-INFO  [px4] Startup script returned successfully
-pxh> ...
-```
-2.b. On a new line, input the command below to bypass certain pre-arming checks that are not applicable for this simulation.
+2.b. ...On a new line, input the command below to bypass certain pre-arming checks that are not applicable for this simulation.
 ```
 param import /home/ros/ros2_ws/working.params
 ```
@@ -214,7 +139,7 @@ Continue by launching the other two drones analogously - but pay attention to th
 ```bash
 cd ..
 cd PX4-Autopilot
-PX4_GZ_STANDALONE=1 PX4_SYS_AUTOSTART=4001 PX4_GZ_MODEL_POSE="0,1" PX4_SIM_MODEL=gz_x500 ./build/px4_sitl_default/bin/px4 -i 2
+PX4_GZ_STANDALONE=1 PX4_SYS_AUTOSTART=4001 PX4_GZ_MODEL_POSE="0,1" PX4_GZ_WORLD=sim_world PX4_SIM_MODEL=gz_x500 ./build/px4_sitl_default/bin/px4 -i 2
 ```
 3.a. **!** Don't forget to specify the simulation parameters by inserting the following line after the same terminal message as before:
 ```
@@ -224,7 +149,7 @@ param import /home/ros/ros2_ws/working.params
 ```bash
 cd ..
 cd PX4-Autopilot
-PX4_GZ_STANDALONE=1 PX4_SYS_AUTOSTART=4001 PX4_GZ_MODEL_POSE="0,2" PX4_SIM_MODEL=gz_x500 ./build/px4_sitl_default/bin/px4 -i 3
+PX4_GZ_STANDALONE=1 PX4_SYS_AUTOSTART=4001 PX4_GZ_MODEL_POSE="0,2" PX4_GZ_WORLD=sim_world PX4_SIM_MODEL=gz_x500 ./build/px4_sitl_default/bin/px4 -i 3
 ```
 
 4.a. **!** Don't forget to specify the simulation parameters by inserting the following line:
@@ -246,6 +171,6 @@ source ~/ros2_ws/install/setup.bash
 cd ros2_ws
 ros2 launch offboard_control_pkg offboard_control_launch_file.launch.py
 ```
-
+If everything went well, the simulation should be up and running, and after a short while, the drones should start flying.
 
 For more information about our development and how to run our simulation, please refer to our [wiki](https://github.com/p4mars/drone_light_show/wiki).
