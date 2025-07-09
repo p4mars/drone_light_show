@@ -8,6 +8,10 @@ from px4_msgs.msg import \
           VehicleGlobalPosition, LedControl, VehicleStatus
 from offboard_control_interfaces.msg import Drone3Info
 import numpy as np 
+import toml
+
+with open("src/offboard_control_pkg/offboard_control_pkg/flame_path.toml", "r") as f:
+    config = toml.load(f)
 
 class Drone_Three(Node):
     def __init__(self) -> None:
@@ -23,20 +27,6 @@ class Drone_Three(Node):
             history=HistoryPolicy.KEEP_LAST,
             depth=10
         )
-
-        # Needed for frame transformation 
-        #if self.leader == 0:
-        #    pass
-        #else:
-        #    self.leader_gps = self.create_subscription(
-        #    VehicleGlobalPosition, f'{self.follower}/fmu/out/vehicle_global_position',
-        #    self.global_position_callback, qos_profile)
-#
-        #    self.leader_vehicle_local_position_subscriber = self.create_subscription(
-        #    VehicleLocalPosition, f'{self.follower}/fmu/out/vehicle_local_position',
-        #    self.vehicle_local_position_callback, qos_profile)
-#
-        #    self.leader_vehicle_local_position = VehicleLocalPosition()
 
         #---------------------------------------
         # Publishers
@@ -95,91 +85,7 @@ class Drone_Three(Node):
         self.dt = 0.1  # 10Hz
         self.timer = self.create_timer(self.dt, self.timer_callback)
 
-        flame_path = [[304.67,1259.00], [274.00,1160.33], [274.00,1160.33],
-             [274.00,1160.33], [266.67,1037.33], [266.33,1037.33],
-             [266.00,1037.33], [279.00,953.00], [279.00,953.00],
-             [279.00,953.00], [309.00,875.00], [309.00,875.00],
-             [309.00,875.00], [347.00,808.00], [347.00,808.00],
-             [347.00,808.00], [389.00,757.00], [389.00,756.00],
-             [389.00,755.00], [437.00,710.00], [437.00,710.00],
-             [437.00,710.00], [490.00,668.00], [491.00,666.00],
-             [492.00,664.00], [549.00,627.00], [549.00,627.00],
-             [549.00,627.00], [607.00,593.00], [607.00,593.00],
-             [607.00,593.00], [668.00,564.00], [668.00,564.00],
-             [668.00,564.00], [725.00,538.00], [727.00,538.00],
-             [729.00,538.00], [782.00,518.00], [784.00,517.00],
-             [786.00,516.00], [843.00,501.00], [843.00,501.00],
-             [843.00,501.00], [899.00,485.00], [899.00,485.00],
-             [899.00,485.00], [961.00,469.00], [961.00,469.00],
-             [961.00,469.00], [1032.00,449.00], [1032.00,449.00],
-             [1032.00,449.00], [1117.00,421.00], [1117.00,421.00],
-             [1117.00,421.00], [1180.00,397.00], [1180.00,397.00],
-             [1180.00,397.00], [1239.00,360.00], [1239.00,360.00],
-             [1239.00,360.00], [1281.00,329.00], [1281.00,329.00],
-             [1281.00,329.00], [1313.00,323.00], [1313.00,323.00],
-             [1313.00,323.00], [1322.00,347.00], [1322.00,348.00],
-             [1322.00,349.00], [1307.00,376.00], [1306.00,378.00],
-             [1305.00,380.00], [1274.00,406.00], [1272.00,408.00],
-             [1270.00,410.00], [1226.00,441.00], [1225.00,441.00],
-             [1224.00,441.00], [1174.00,478.00], [1174.00,480.00],
-             [1174.00,482.00], [1110.00,525.00], [1106.00,527.00],
-             [1102.00,529.00], [1039.00,575.00], [1037.00,578.00],
-             [1035.00,581.00], [993.00,614.00], [991.00,616.00],
-             [989.00,618.00], [951.00,657.00], [949.00,659.00],
-             [947.00,661.00], [914.00,727.00], [914.00,727.00],
-             [914.00,727.00], [905.00,777.00], [906.00,779.00],
-             [907.00,781.00], [926.00,831.00], [928.00,834.00],
-             [930.00,837.00], [969.00,855.00], [972.00,856.00],
-             [975.00,857.00], [1030.00,865.00], [1037.00,862.00],
-             [1044.00,859.00], [1094.00,838.00], [1095.00,838.00],
-             [1096.00,838.00], [1152.00,806.00], [1152.00,805.00],
-             [1152.00,804.00], [1186.00,791.00], [1186.00,791.00],
-             [1186.00,791.00], [1202.00,815.00], [1203.00,816.00],
-             [1204.00,817.00], [1200.00,849.00], [1197.00,854.00],
-             [1194.00,859.00], [1171.00,895.00], [1169.00,898.00],
-             [1167.00,901.00], [1145.00,947.00], [1145.00,948.00],
-             [1145.00,949.00], [1094.00,1026.00], [1093.00,1028.00],
-             [1092.00,1030.00], [1057.00,1080.00], [1053.00,1084.00],
-             [1049.00,1088.00], [1006.00,1137.00], [1004.00,1141.00],
-             [1002.00,1145.00], [962.00,1184.00], [959.00,1187.00],
-             [956.00,1190.00], [893.00,1236.00], [891.00,1238.00],
-             [889.00,1240.00], [840.00,1274.00], [836.00,1278.00],
-             [832.00,1282.00], [760.00,1314.00], [759.00,1314.00],
-             [758.00,1314.00], [693.00,1325.00], [691.00,1327.00],
-             [689.00,1329.00], [647.00,1322.00], [647.00,1322.00],
-             [647.00,1322.00], [642.00,1294.00], [642.00,1293.00],
-             [642.00,1292.00], [670.00,1271.00], [672.00,1269.00],
-             [674.00,1267.00], [708.00,1250.00], [712.00,1247.00],
-             [716.00,1244.00], [745.00,1225.00], [748.00,1222.00],
-             [751.00,1219.00], [784.00,1182.00], [785.00,1180.00],
-             [786.00,1178.00], [814.00,1127.00], [815.00,1125.00],
-             [816.00,1123.00], [839.00,1086.00], [841.00,1083.00],
-             [843.00,1080.00], [858.00,1040.00], [859.00,1038.00],
-             [860.00,1036.00], [861.00,989.00], [860.00,988.00],
-             [859.00,987.00], [833.00,976.00], [827.00,976.00],
-             [821.00,976.00], [790.00,1002.00], [788.00,1005.00],
-             [786.00,1008.00], [760.00,1039.00], [754.00,1043.00],
-             [748.00,1047.00], [698.00,1070.00], [691.00,1071.00],
-             [684.00,1072.00], [620.00,1057.00], [620.00,1056.00],
-             [620.00,1055.00], [590.00,1013.00], [590.00,1008.00],
-             [590.00,1003.00], [597.00,957.00], [598.00,956.00],
-             [599.00,955.00], [619.00,919.00], [620.00,918.00],
-             [621.00,917.00], [658.00,874.00], [659.00,872.00],
-             [660.00,870.00], [687.00,832.00], [690.00,829.00],
-             [693.00,826.00], [720.00,775.00], [721.00,773.00],
-             [722.00,771.00], [729.00,722.00], [729.00,722.00],
-             [729.00,722.00], [706.00,703.00], [703.00,703.00],
-             [700.00,703.00], [669.00,713.00], [668.00,714.00],
-             [667.00,715.00], [641.00,750.00], [639.00,754.00],
-             [637.00,758.00], [617.00,796.00], [615.00,798.00],
-             [613.00,800.00], [577.00,829.00], [572.00,835.00],
-             [567.00,841.00], [517.00,880.00], [515.00,881.00],
-             [513.00,882.00], [477.00,913.00], [471.00,917.00],
-             [465.00,921.00], [422.00,966.00], [420.00,969.00],
-             [418.00,972.00], [371.00,1016.00], [368.00,1021.00],
-             [365.00,1026.00], [336.00,1079.00], [334.00,1083.00],
-             [332.00,1087.00], [319.00,1143.00], [319.00,1146.00],
-             [319.00,1149.00], [321.00,1201.00], [321.00,1201.00]]
+        flame_path = config["setpoints"]["flame"]
         
         flame_path = np.array(flame_path) # Converting to numpy array for easier manipulation
         # Flip the y-axis to make the origin (0,0) start at the bottom-left
@@ -197,6 +103,21 @@ class Drone_Three(Node):
         #flame_path = flame_path.tolist()
         self.flame_path = flame_path  # Store the flame path for later use
         
+        #-----------------------------------------
+        # Logging initialisation
+        #-----------------------------------------
+        self.arm_logged = False  # To log the arm command only once
+        self.disarm_logged = False  # To log the disarm command only once
+        self.offboard_logged = False  # To log the offboard mode command only once
+        self.land_logged = False  # To log the land command only once
+        self.heartbeat_logged = False  # To log the heartbeat signal only once
+        self.setpoint_logged = False  # To log the setpoint publishing only once
+        self.counter_logged = False  # To log the counter only once
+        self.transform_logged = False  # To log the frame transformation only once
+        self.leader_logged = False  # To log the leader vehicle local position only once
+        self.light_logged = False  # To log the light control command only once
+        self.colour_current = LedControl.COLOR_OFF  # Current colour of the light
+ 
     def publish_vehicle_command(self, target, command, **params) -> None:
         msg = VehicleCommand()
         msg.command = command
@@ -219,24 +140,32 @@ class Drone_Three(Node):
     def arm(self):
         self.publish_vehicle_command(self.vehicle_status.system_id,
             VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=1.0)
-        #self.get_logger().info('Arm command sent')
+        if not self.arm_logged:
+            self.get_logger().info("Arm command sent")
+            self.arm_logged = True
 
     # Disarming the vehicle by sending the command
     def disarm(self):
         self.publish_vehicle_command(self.vehicle_status.system_id,
             VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=0.0)
-        #self.get_logger().info('Disarm command sent')
+        if not self.disarm_logged:
+            self.get_logger().info("Disarm command sent")
+            self.disarm_logged = True
 
     # Offboard mode vehicle command
     def engage_offboard_mode(self):
         self.publish_vehicle_command(self.vehicle_status.system_id,
             VehicleCommand.VEHICLE_CMD_DO_SET_MODE, param1=1.0, param2=6.0)
-        #self.get_logger().info("Switching to offboard mode")
+        if not self.offboard_logged:
+            self.get_logger().info("Switching to offboard mode")
+            self.offboard_logged = True
 
     # Landing vehicle command
     def land(self):
         self.publish_vehicle_command(self.vehicle_status.system_id, VehicleCommand.VEHICLE_CMD_NAV_LAND)
-        #self.get_logger().info("Switching to land mode")
+        if not self.land_logged:
+            self.get_logger().info("Switching to land mode")
+            self.land_logged = True
 
     #### Callback functions for the custom subscribers
     def vehicle_local_position_callback(self, msg):
@@ -270,14 +199,14 @@ class Drone_Three(Node):
             self.leader_vehicle_local_position_subscriber = self.create_subscription(
             VehicleLocalPosition, f'{self.custom_msg.follower_of}/fmu/out/vehicle_local_position',
             self.leader_vehicle_local_position_callback, qos_profile)
+            if not self.leader_logged:
+                self.get_logger().info(f"Leader vehicle local position is: {self.leader_vehicle_local_position}") 
+                self.leader_logged = True
 
-            ##self.get_logger().info(f"Leader vehicle local position is: {self.leader_vehicle_local_position}")  
-    
     ####################################################    
     # Callback for leader's vehicle local position
     def leader_vehicle_local_position_callback(self, msg):
         self.leader_vehicle_local_position = msg
-
 
     ##################################################################
     # Light control command 
@@ -311,8 +240,16 @@ class Drone_Three(Node):
         msg.color = color_dict[colour]
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
         self.light_control_publisher.publish(msg)
-        ##self.get_logger().info("Light control command sent")
 
+        if msg.color != self.colour_current:
+            self.light_logged = False
+            self.get_logger().info("Light control command sent")
+            self.light_logged = True
+        
+        else:
+            pass
+        
+        self.colour_current = msg.color
     # Sending the messages to change into offboard mode
     # and to set the position setpoint
     def publish_offboard_control_heartbeat_signal(self):
@@ -323,7 +260,9 @@ class Drone_Three(Node):
         msg.attitude = False
         msg.body_rate = False
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
-        self.offboard_control_mode_publisher.publish(msg)
+        if not self.heartbeat_logged:
+            self.offboard_control_mode_publisher.publish(msg) 
+            self.heartbeat_logged = True
 
     # Publishing the position setpoints through TrajectorySetpoint
     def publish_position_setpoint(self, x: float, y: float, z: float):
@@ -332,8 +271,11 @@ class Drone_Three(Node):
         msg.yaw = 0.0 #1.57079  # (90 degree)
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
         self.trajectory_setpoint_publisher.publish(msg)
-        #self.get_logger().info(f"Publishing position setpoints {[x, y, z]}")
 
+        if not self.setpoint_logged:
+            self.get_logger().info(f"Publishing position setpoints {[x, y, z]}")
+            self.setpoint_logged = True
+    
     # Calculating the position change in the local frame of the leader
     def follower_frame_transform(self):
         ##self.get_logger().info(f"the leader is: {self.custom_msg.follower_of}")
@@ -369,15 +311,15 @@ class Drone_Three(Node):
         origin_delta_latitude = follower_latitude - leader_latitude
         origin_delta_longitude = follower_longitude - leader_longitude
 
-        ##self.get_logger().info(f"coordinate transform for follower: {[origin_delta_latitude, origin_delta_longitude]}") #, delta_altitude]}")
-        
+        if not self.transform_logged:
+            self.get_logger().info(f"coordinate transform for follower: {[origin_delta_latitude, origin_delta_longitude]}") #, delta_altitude]}")
+            self.transform_logged = True
+
         # x offset - longitude, y offset - latitude
-        
         self.coordinate_transform = [origin_delta_latitude, origin_delta_longitude] 
 
     # Update the trajectory for the follower drone
     def updated_trajectory(self, setpoints: list, follower_number: int, dt: float) -> list:
-
         # TIME DELAY
         extra_points = 10*follower_number/dt # add a time delay in seconds (assuming a 10Hz timer for dt)
 
@@ -413,7 +355,6 @@ class Drone_Three(Node):
         setpoints = new_points + path_to_flame + setpoints + path_to_start
         return setpoints
 
-
     # CONTROL LOOP
     def timer_callback(self) -> None:
         # ----------------------------------------
@@ -422,8 +363,10 @@ class Drone_Three(Node):
         # -----------------------------------------
 
         if self.offboard_setpoint_counter < 10:
-            self.get_logger().info(f"Received message: leader={self.custom_msg.follower_of}, color={self.custom_msg.light_colour}")
-        
+            if not self.counter_logged:
+                self.get_logger().info(f"Received message: leader={self.custom_msg.follower_of}, color={self.custom_msg.light_colour}")
+                self.counter_logged = True
+
         ######## Assign the leader and follower relationships and the light colour ##########
         self.leader = self.custom_msg.follower_of
         self.follower_number = self.custom_msg.follower_number
@@ -435,7 +378,6 @@ class Drone_Three(Node):
         funct = "on" # light function
 
         self.publish_offboard_control_heartbeat_signal()
-        
 
         ## ---------------------------------------------------
         ## PHASE 1: Initialisation (first 5 seconds)

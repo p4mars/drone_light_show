@@ -100,26 +100,44 @@ class Drone_One(Node):
         self.timer = self.create_timer(self.dt, self.timer_callback)
 
         flame_path = config["setpoints"]["flame"] # Load the flame path from the TOML file
-        self.get_logger().info(flame_path)
-
         
         flame_path = np.array(flame_path) # Converting to numpy array for easier manipulation
+
         # Flip the y-axis to make the origin (0,0) start at the bottom-left
-        flame_points_y = np.max(flame_path[:, 1]) - flame_path[:, 1] # y-coordinates in the NED frame, with the origin at the bottom-left (positive up) instead of top-left (positive down) as originally
+
+        # y-coordinates in the NED frame, with the origin at the bottom-left (positive up) \
+        # instead of top-left (positive down)
+        flame_points_y = np.max(flame_path[:, 1]) - flame_path[:, 1] 
         flame_points_x = -flame_path[:,0] # x-coordinates in the NED frame
-        flame_path = np.column_stack((flame_points_x, flame_points_y))  # Combine x and y coordinates into a single array again
+        flame_path = np.column_stack((flame_points_x, flame_points_y))  # Combine x and y coordinates into a single array
 
         # Shift the flame path to start from (0,0)
-        flame_path[:, 0] = flame_path[:, 0] - flame_path[0][0] # Normalize to start from (0,:)
-        flame_path[:, 1] = flame_path[:, 1] - flame_path[0][1] # Normalize to start from (:,0)
+        flame_path[:, 0] = flame_path[:, 0] - flame_path[0][0] # Normalise to start from (0,:)
+        flame_path[:, 1] = flame_path[:, 1] - flame_path[0][1] # Normalise to start from (:,0)
 
         # Scale the flame path to fit in the frame of the world (10mx10m instead of 1200m)
         flame_path = flame_path / np.max(flame_path)  # Scale down to fit in the local frame by scaling everything to 0-1 range
         flame_path = flame_path * 8.0  # Scale the maximum dimension of the flame to 10m for the trajectory
-        #flame_path = flame_path.tolist()
 
-        self.flame_path = flame_path  # Store the flame path for later use
-        
+        self.flame_path = flame_path  # Store the flame path
+
+
+        #-----------------------------------------
+        # Logging initialisation
+        #-----------------------------------------
+        self.arm_logged = False  # To log the arm command only once
+        self.disarm_logged = False  # To log the disarm command only once
+        self.offboard_logged = False  # To log the offboard mode command only once
+        self.land_logged = False  # To log the land command only once
+        self.heartbeat_logged = False  # To log the heartbeat signal only once
+        self.setpoint_logged = False  # To log the setpoint publishing only once
+        self.counter_logged = False  # To log the counter only once
+        self.transform_logged = False  # To log the frame transformation only once
+        self.leader_logged = False  # To log the leader vehicle local position only once
+        self.light_logged = False  # To log the light control command only once
+        self.colour_current = LedControl.COLOR_OFF  # Current colour of the light
+ 
+    # Function to publish vehicle command messages
     def publish_vehicle_command(self, target, command, **params) -> None:
         msg = VehicleCommand()
         msg.command = command
@@ -138,31 +156,37 @@ class Drone_One(Node):
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
         self.vehicle_command_publisher.publish(msg)
 
-    #Arming the vehicle by sending the command
+    # Arming the vehicle by sending the command
     def arm(self):
         self.publish_vehicle_command(self.vehicle_status.system_id,
             VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=1.0)
-        #self.get_logger().info('Arm command sent')
+        if not self.arm_logged:
+            self.get_logger().info("Arm command sent")
+            self.arm_logged = True
 
     # Disarming the vehicle by sending the command
     def disarm(self):
         self.publish_vehicle_command(self.vehicle_status.system_id,
             VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=0.0)
-        #self.get_logger().info('Disarm command sent')
+        if not self.disarm_logged:
+            self.get_logger().info("Disarm command sent")
+            self.disarm_logged = True
 
     # Offboard mode vehicle command
     def engage_offboard_mode(self):
-        self.publish_vehicle_command(self.vehicle_status.system_id,
-            VehicleCommand.VEHICLE_CMD_DO_SET_MODE, param1=1.0, param2=6.0)
-        #self.get_logger().info("Switching to offboard mode")
+        self.publish_vehicle_command(self.vehicle_status.system_id,VehicleCommand.VEHICLE_CMD_DO_SET_MODE, param1=1.0, param2=6.0)
+        if not self.offboard_logged:
+            self.get_logger().info("Switching to offboard mode")
+            self.offboard_logged = True
 
     # Landing vehicle command
     def land(self):
         self.publish_vehicle_command(self.vehicle_status.system_id, VehicleCommand.VEHICLE_CMD_NAV_LAND)
-        #self.get_logger().info("Switching to land mode")
+        if not self.land_logged:
+            self.get_logger().info("Switching to land mode")
+            self.land_logged = True
 
-    ####################################################
-    #### Callback functions for the custom subscribers
+    # Callback functions for the custom subscribers
     def vehicle_local_position_callback(self, msg):
         self.vehicle_local_position = msg
 
@@ -180,24 +204,20 @@ class Drone_One(Node):
             depth=10
         )
         
-        """Handle incoming custom messages"""
+        # Handle incoming custom messages
         self.custom_msg = msg
 
         # Needed for frame transformation 
         if self.leader == "":
             pass
         else:
-            #self.leader_gps = self.create_subscription(
-            #VehicleGlobalPosition, f'{self.leader}/fmu/out/vehicle_global_position',
-            #self.global_position_callback, qos_profile)
-
             self.leader_vehicle_local_position_subscriber = self.create_subscription(
             VehicleLocalPosition, f'{self.custom_msg.follower_of}/fmu/out/vehicle_local_position',
             self.leader_vehicle_local_position_callback, qos_profile)
-
-            #self.get_logger().info(f"Leader vehicle local position is: {self.leader_vehicle_local_position}") 
-    
-    ####################################################    
+            if not self.leader_logged:
+                self.get_logger().info(f"Leader vehicle local position is: {self.leader_vehicle_local_position}") 
+                self.leader_logged = True
+        
     # Callback for leader's vehicle local position
     def leader_vehicle_local_position_callback(self, msg):
         self.leader_vehicle_local_position = msg
@@ -233,10 +253,21 @@ class Drone_One(Node):
         msg.color = color_dict[colour]
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
         self.light_control_publisher.publish(msg)
-        #self.get_logger().info("Light control command sent")
+
+        # Log the light control command only if the colour has changed
+        if msg.color != self.colour_current:
+            self.light_logged = False
+            self.get_logger().info("Light control command sent")
+            self.light_logged = True
+        
+        else:
+            pass
+        
+        # Update the current colour
+        # This is to avoid logging the same colour change multiple times
+        self.colour_current = msg.color
 
     # Sending the messages to change into offboard mode
-    # and to set the position setpoint
     def publish_offboard_control_heartbeat_signal(self):
         msg = OffboardControlMode()
         msg.position = True
@@ -245,8 +276,11 @@ class Drone_One(Node):
         msg.attitude = False
         msg.body_rate = False
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
-        self.offboard_control_mode_publisher.publish(msg)
 
+        if not self.heartbeat_logged:
+            self.offboard_control_mode_publisher.publish(msg) 
+            self.heartbeat_logged = True
+        
     # Publishing the position setpoints through TrajectorySetpoint
     def publish_position_setpoint(self, x: float, y: float, z: float):
         msg = TrajectorySetpoint()
@@ -254,24 +288,23 @@ class Drone_One(Node):
         msg.yaw = 0.0 #1.57079  # (90 degree)
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
         self.trajectory_setpoint_publisher.publish(msg)
-        #self.get_logger().info(f"Publishing position setpoints {[x, y, z]}")
+        
+        if not self.setpoint_logged:
+            self.get_logger().info(f"Publishing position setpoints {[x, y, z]}")
+            self.setpoint_logged = True
 
     # Calculating the position change in the local frame of the leader
     def follower_frame_transform(self):
-        ### determining the origin of the local frame for the leader with respect to the global coordinates
-        #self.get_logger().info(f"the leader is: {self.custom_msg.follower_of}")
-        #self.get_logger().info(f"Leader reference position: {self.leader_vehicle_local_position.ref_lat}, {self.leader_vehicle_local_position.ref_lon}")
-        #self.get_logger().info(f"Follower reference position: {self.vehicle_local_position.ref_lat}, {self.vehicle_local_position.ref_lon}")
         leader_latitude_origin = self.leader_vehicle_local_position.ref_lat
         leader_longitude_origin = self.leader_vehicle_local_position.ref_lon
 
-        ### determining the origin of the local frame for the follower with respect to the global coordinates
+        # Determining the origin of the local frame for the follower with respect to the global coordinates
         follower_latitude_origin = self.vehicle_local_position.ref_lat
         follower_longitude_origin = self.vehicle_local_position.ref_lon        
                 
         def convert_coordinate_to_meters(latitude, longitude):
-            #### This converts the coordinate degrees to meters as per wikipedia WGS84 conversions 
-            # (accurate to a magnitude of cm)
+            # This converts the coordinate degrees to meters as per wikipedia WGS84 conversions 
+            # (cm accurate)
             latitude = np.deg2rad(latitude)
             longitude = np.deg2rad(longitude)
 
@@ -288,11 +321,13 @@ class Drone_One(Node):
         follower_latitude, follower_longitude = convert_coordinate_to_meters(follower_latitude_origin, follower_longitude_origin)
         
         # Calculate the difference in follower coordinates wrt the leader 
-        # This is the follower position in the leader local frame
+        # This is the follower position in the leader local frame 
         origin_delta_latitude = follower_latitude - leader_latitude
         origin_delta_longitude = follower_longitude - leader_longitude
         
-        #self.get_logger().info(f"coordinate transform for follower: {[origin_delta_latitude, origin_delta_longitude]}") #, delta_altitude]}")
+        if not self.transform_logged:
+            self.get_logger().info(f"coordinate transform for follower: {[origin_delta_latitude, origin_delta_longitude]}") #, delta_altitude]}")
+            self.transform_logged = True
         
         # x offset - longitude, y offset - latitude
         self.coordinate_transform = [origin_delta_latitude, origin_delta_longitude] 
@@ -308,7 +343,7 @@ class Drone_One(Node):
             new_points.append([self.coordinate_transform[0], self.coordinate_transform[1], self.takeoff_height])
 
         # Add a path to the big flame model in the custom world
-        path_to_flame = [[0.0,1.0, self.takeoff_height]]
+        path_to_flame = [[0.0, 1.0, self.takeoff_height]]
 
         section_1_length = 3.5
         section_1_x_points = np.linspace(0.0, section_1_length, 7) ## first path section with 0.5m increments
@@ -334,17 +369,15 @@ class Drone_One(Node):
         setpoints = new_points + path_to_flame + setpoints + path_to_start
         return setpoints
     
-    
-
     # CONTROL LOOP
     def timer_callback(self) -> None:
         # ----------------------------------------
-        # TO DO!!!!!!!
         # Subscribe to the TC topic to see if you have a follower 
         # -----------------------------------------
         if self.offboard_setpoint_counter < 10:
-            self.get_logger().info(f"Received message: leader={self.custom_msg.follower_of}, color={self.custom_msg.light_colour}")
-
+            if not self.counter_logged:
+                self.get_logger().info(f"Received message: leader={self.custom_msg.follower_of}, color={self.custom_msg.light_colour}")
+                self.counter_logged = True
 
         ######## Assign the leader and follower relationships and the light colour ##########
         self.leader = self.custom_msg.follower_of
@@ -352,24 +385,20 @@ class Drone_One(Node):
         self.colour = self.custom_msg.light_colour # light colour
         ###############
         
-        #print(f"Leader: {self.leader}, Follower number: {self.follower_number}, Colour: {self.colour}")
-        #print(self.colour)
         funct = "on" # light function
 
         self.publish_offboard_control_heartbeat_signal()
-    
 
         ## ---------------------------------------------------
         ## PHASE 1: Initialisation (first 5 seconds)
         ## Set the drone to offboard mode and arm it
         ## Will takeoff and maintain position for 5 seconds
         ## ---------------------------------------------------
-
-
         ####### Establishing the frame transform between the leader and the follower frames
             
         #### Wait until the offboard_setpoint_counter reaches 10
-        #### This is to ensure that the drone has enough time to switch to offboard mode and receive the necessary information about its leader to perform the frame transformation
+        #### This is to ensure that the drone has enough time to \
+        # switch to offboard mode and receive the necessary information about its leader to perform the frame transformation
         if self.offboard_setpoint_counter == 10:
             
             if self.leader != "":
@@ -388,30 +417,24 @@ class Drone_One(Node):
         ##### Take-off procedure #####
         if self.offboard_setpoint_counter < 100:
             # ~10 seconds at 10Hz timer
-            # Publish setpoint continuously
+
+            # Publish setpoint continuously - hover at 2m altitude
             self.publish_position_setpoint(0.0, 0.0, self.takeoff_height)
-            ##### The setpoint can be 0.0, 0.0 for all drones, since they would be hovering just over their starting location (origin of the local frame)
         
             # Engage offboard after 2.5 seconds
             # Sending actual offboard command
             if self.offboard_setpoint_counter == 25:
                 self.engage_offboard_mode()
-                #self.get_logger().info("Offboard mode requested")
                 
             # Arm after 5 seconds
             # Sending arm command -> Will arm and take off
             elif self.offboard_setpoint_counter == 50:
                 self.arm()
-                #self.get_logger().info("Arm command sent")
-    
-        
+
         ## ---------------------------------------------------
         ## PHASE 2.1: Frame transform example
         ## ---------------------------------------------------
-        # Trajectory for an equilateral triangle in the leader frame
-        ### Simple triangle path example
-        #positions = [[-3.0,0.0,2.0], [0.0,5.196,2.0], [3.0,0.0,2.0], [-3.0,0.0,2.0], [0.0,5.196,2.0], [3.0,0.0,2.0], [-3.0,0.0,2.0], [0.0,5.196,2.0]] # an equilateral triangle example in the leader frame
-        
+
         ### The actual flame path in 2D, which needs to be adjusted to the 3D world
         positions = self.flame_path  
 
@@ -421,7 +444,6 @@ class Drone_One(Node):
         # ---------------------------------------------------
         # CONCATENATE LISTS IF FOLLOWER 
         # ---------------------------------------------------
-        # !!!!TO DO!!!!!
         if self.leader != "":
             ##### If the drone is a follower, update the trajectory to include the delay in movement
             positions = self.updated_trajectory(positions, self.follower_number, self.dt)
@@ -435,7 +457,6 @@ class Drone_One(Node):
                 target_y = positions[self.position_change][1]  
                 target_z = positions[self.position_change][2] # z is negative in NED frame
                 # Telling to move to the next position after the first has been reached
-                
 
                 # Adding the offset if it is a follower drone 
                 if self.leader != "":
@@ -477,7 +498,6 @@ class Drone_One(Node):
                 
 def main(args=None) -> None:
     try:
-        
         print('Starting offboard control node...')
         rclpy.init(args=args)
         offboard_control = Drone_One()
@@ -488,8 +508,3 @@ def main(args=None) -> None:
         print(f"Exception occurred in Drone_One Node: {e}")
         rclpy.shutdown()
 
-#if __name__ == '__main__':
-#    try:
-#        main()
-#    except Exception as e:
-#        print(f"Exception occured in Drone_One Node: {e}")
