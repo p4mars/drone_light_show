@@ -28,6 +28,7 @@ setup(
             'drone1 = offboard_control_pkg.drone1:main',
             'drone2 = offboard_control_pkg.drone2:main',
             'drone3 = offboard_control_pkg.drone3:main',
+            'tf_tree = offboard_control_pkg.tf_tree:main',
         ],
     },
 )

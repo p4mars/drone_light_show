@@ -24,5 +24,10 @@ def generate_launch_description():
             package='offboard_control_pkg',
             executable='drone3',
             name='drone3',
+            output='screen'),
+        Node(
+            package='offboard_control_pkg',
+            executable='tf_tree',
+            name='tf_tree',
             output='screen')
     ])

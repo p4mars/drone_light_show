@@ -120,6 +120,7 @@ class Drone_One(Node):
         flame_path = flame_path * 8.0  # Scale the maximum dimension of the flame to 10m for the trajectory
 
         self.flame_path = flame_path  # Store the flame path
+
         #-----------------------------------------
         # Logging initialisation
         #-----------------------------------------
@@ -134,6 +135,7 @@ class Drone_One(Node):
         self.leader_logged = False  # To log the leader vehicle local position only once
         self.light_logged = False  # To log the light control command only once
         self.colour_current = LedControl.COLOR_OFF  # Current colour of the light
+
  
     # Function to publish vehicle command messages
     def publish_vehicle_command(self, target, command, **params) -> None:

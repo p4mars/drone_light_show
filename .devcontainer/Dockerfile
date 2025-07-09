@@ -149,6 +149,12 @@ RUN make px4_sitl
 RUN ln -s /home/ros/ros2_ws/Gazebo_files/sim_world.sdf /home/ros/PX4-Autopilot/Tools/simulation/gz/worlds/ && \
     ln -s /home/ros/ros2_ws/Gazebo_files/TU_Delft_logo /home/ros/PX4-Autopilot/Tools/simulation/gz/models/
 
+RUN apt-get update && apt-get install -y \
+libproj-dev proj-data proj-bin \
+&& rm -rf /var/lib/apt/lists/*
+
+# Install pyproj via pip
+RUN pip install pyproj
 # Setup entrypoint
 ENTRYPOINT ["/ros_entrypoint.sh"]
 CMD ["/bin/bash"]

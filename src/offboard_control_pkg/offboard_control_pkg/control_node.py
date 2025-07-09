@@ -24,10 +24,6 @@ class ControlNode(Node):
         # [Sequence number in the line, who is the drone's leader, which follower it is]
 
         self.relationship_matrix = np.array([[1, 0, 0], [2, 1, 1], [3, 1, 2]])
-
-        #self.relationship_matrix = np.array([[0, 0, 1], [1, 1, 2], [2, 1, 3]])
-
-        
         
         #--------------------------------------------
         # PUBLISHERS 
