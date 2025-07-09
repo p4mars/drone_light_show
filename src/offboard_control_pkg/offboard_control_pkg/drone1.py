@@ -74,8 +74,6 @@ class Drone_One(Node):
         self.colour = self.custom_msg.light_colour
         self.follower_number = self.custom_msg.follower_number
         self.drone_name = self.custom_msg.drone_name
-
-
         self.vehicle_status = VehicleStatus()
         self.vehicle_local_position = VehicleLocalPosition()
         self.leader_vehicle_local_position = self.vehicle_local_position # Placeholder for leader's local position if needed
@@ -89,6 +87,8 @@ class Drone_One(Node):
         #----------------------------------------
         self.offboard_setpoint_counter = 0 # To count time passed
         self.takeoff_height = -2.0 # positive downward!
+        self.infrontx = 2.0  # x offset in front of the flame
+        self.infronty = 2.0  # y offset in front of the flame
         self.theta = 0.0
         self.position_change = 0
         self.all_close_counter = 0
@@ -120,8 +120,6 @@ class Drone_One(Node):
         flame_path = flame_path * 8.0  # Scale the maximum dimension of the flame to 10m for the trajectory
 
         self.flame_path = flame_path  # Store the flame path
-
-
         #-----------------------------------------
         # Logging initialisation
         #-----------------------------------------
@@ -345,12 +343,12 @@ class Drone_One(Node):
         # Add a path to the big flame model in the custom world
         path_to_flame = [[0.0, 1.0, self.takeoff_height]]
 
-        section_1_length = 3.5
+        section_1_length = self.flame_path[0][0] - self.infrontx # Length of the first section of the path to the flame
         section_1_x_points = np.linspace(0.0, section_1_length, 7) ## first path section with 0.5m increments
         for x in section_1_x_points:
             path_to_flame.append([x, 1.0, self.takeoff_height])
         
-        section_2_length = 9.0
+        section_2_length = self.flame_path[0][1] - self.infronty
         section_2_y_points = np.linspace(1.0, section_2_length, 21) ## second path section with 0.5m increments
         for y in section_2_y_points:
             path_to_flame.append([section_1_length, y, self.takeoff_height])
@@ -379,11 +377,13 @@ class Drone_One(Node):
                 self.get_logger().info(f"Received message: leader={self.custom_msg.follower_of}, color={self.custom_msg.light_colour}")
                 self.counter_logged = True
 
-        ######## Assign the leader and follower relationships and the light colour ##########
+        ## ---------------------------------------------------
+        ## PHASE 0: Configuration
+        # Assign the leader & follower relationships and the light colour 
+        # -----------------------------------------
         self.leader = self.custom_msg.follower_of
         self.follower_number = self.custom_msg.follower_number
         self.colour = self.custom_msg.light_colour # light colour
-        ###############
         
         funct = "on" # light function
 
@@ -394,10 +394,9 @@ class Drone_One(Node):
         ## Set the drone to offboard mode and arm it
         ## Will takeoff and maintain position for 5 seconds
         ## ---------------------------------------------------
-        ####### Establishing the frame transform between the leader and the follower frames
-            
-        #### Wait until the offboard_setpoint_counter reaches 10
-        #### This is to ensure that the drone has enough time to \
+        
+        # Wait until the offboard_setpoint_counter reaches 10
+        # This is to ensure that the drone has enough time to \
         # switch to offboard mode and receive the necessary information about its leader to perform the frame transformation
         if self.offboard_setpoint_counter == 10:
             
@@ -445,7 +444,7 @@ class Drone_One(Node):
         # CONCATENATE LISTS IF FOLLOWER 
         # ---------------------------------------------------
         if self.leader != "":
-            ##### If the drone is a follower, update the trajectory to include the delay in movement
+            # If the drone is a follower, update the trajectory to include the delay in movement
             positions = self.updated_trajectory(positions, self.follower_number, self.dt)
         else:
             positions = self.updated_trajectory(positions, 0, self.dt) # No delay for the leader drone
