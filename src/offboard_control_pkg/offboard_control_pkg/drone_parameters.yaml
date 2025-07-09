@@ -1,0 +1,7 @@
+start_delay_sec: 2.0
+scan_offset_x: 10.0
+scan_offset_y: 5.0
+base_scan_pose:
+  x: 0.0
+  y: 0.0
+  z: 10.0
