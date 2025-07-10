@@ -219,24 +219,24 @@ class Drone_Three(Node):
     def arm(self):
         self.publish_vehicle_command(self.vehicle_status.system_id,
             VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=1.0)
-        self.get_logger().info('Arm command sent')
+        #self.get_logger().info('Arm command sent')
 
     # Disarming the vehicle by sending the command
     def disarm(self):
         self.publish_vehicle_command(self.vehicle_status.system_id,
             VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=0.0)
-        self.get_logger().info('Disarm command sent')
+        #self.get_logger().info('Disarm command sent')
 
     # Offboard mode vehicle command
     def engage_offboard_mode(self):
         self.publish_vehicle_command(self.vehicle_status.system_id,
             VehicleCommand.VEHICLE_CMD_DO_SET_MODE, param1=1.0, param2=6.0)
-        self.get_logger().info("Switching to offboard mode")
+        #self.get_logger().info("Switching to offboard mode")
 
     # Landing vehicle command
     def land(self):
         self.publish_vehicle_command(self.vehicle_status.system_id, VehicleCommand.VEHICLE_CMD_NAV_LAND)
-        self.get_logger().info("Switching to land mode")
+        #self.get_logger().info("Switching to land mode")
 
     #### Callback functions for the custom subscribers
     def vehicle_local_position_callback(self, msg):
@@ -271,7 +271,7 @@ class Drone_Three(Node):
             VehicleLocalPosition, f'{self.custom_msg.follower_of}/fmu/out/vehicle_local_position',
             self.leader_vehicle_local_position_callback, qos_profile)
 
-            #self.get_logger().info(f"Leader vehicle local position is: {self.leader_vehicle_local_position}")  
+            ##self.get_logger().info(f"Leader vehicle local position is: {self.leader_vehicle_local_position}")  
     
     ####################################################    
     # Callback for leader's vehicle local position
@@ -311,7 +311,7 @@ class Drone_Three(Node):
         msg.color = color_dict[colour]
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
         self.light_control_publisher.publish(msg)
-        #self.get_logger().info("Light control command sent")
+        ##self.get_logger().info("Light control command sent")
 
     # Sending the messages to change into offboard mode
     # and to set the position setpoint
@@ -332,13 +332,13 @@ class Drone_Three(Node):
         msg.yaw = 0.0 #1.57079  # (90 degree)
         msg.timestamp = int(self.get_clock().now().nanoseconds / 1000)
         self.trajectory_setpoint_publisher.publish(msg)
-        self.get_logger().info(f"Publishing position setpoints {[x, y, z]}")
+        #self.get_logger().info(f"Publishing position setpoints {[x, y, z]}")
 
     # Calculating the position change in the local frame of the leader
     def follower_frame_transform(self):
-        #self.get_logger().info(f"the leader is: {self.custom_msg.follower_of}")
-        #self.get_logger().info(f"Leader reference position: {self.leader_vehicle_local_position.ref_lat}, {self.leader_vehicle_local_position.ref_lon}")
-        #self.get_logger().info(f"Follower reference position: {self.vehicle_local_position.ref_lat}, {self.vehicle_local_position.ref_lon}")
+        ##self.get_logger().info(f"the leader is: {self.custom_msg.follower_of}")
+        ##self.get_logger().info(f"Leader reference position: {self.leader_vehicle_local_position.ref_lat}, {self.leader_vehicle_local_position.ref_lon}")
+        ##self.get_logger().info(f"Follower reference position: {self.vehicle_local_position.ref_lat}, {self.vehicle_local_position.ref_lon}")
 
         leader_latitude_origin = self.leader_vehicle_local_position.ref_lat
         leader_longitude_origin = self.leader_vehicle_local_position.ref_lon
@@ -369,7 +369,7 @@ class Drone_Three(Node):
         origin_delta_latitude = follower_latitude - leader_latitude
         origin_delta_longitude = follower_longitude - leader_longitude
 
-        #self.get_logger().info(f"coordinate transform for follower: {[origin_delta_latitude, origin_delta_longitude]}") #, delta_altitude]}")
+        ##self.get_logger().info(f"coordinate transform for follower: {[origin_delta_latitude, origin_delta_longitude]}") #, delta_altitude]}")
         
         # x offset - longitude, y offset - latitude
         
@@ -422,7 +422,8 @@ class Drone_Three(Node):
         # -----------------------------------------
 
         if self.offboard_setpoint_counter < 10:
-            self.get_logger().info(f"Received message: leader={self.custom_msg.follower_of}, color={self.custom_msg.light_colour}")
+            pass
+            #self.get_logger().info(f"Received message: leader={self.custom_msg.follower_of}, color={self.custom_msg.light_colour}")
         
         ######## Assign the leader and follower relationships and the light colour ##########
         self.leader = self.custom_msg.follower_of
@@ -471,13 +472,13 @@ class Drone_Three(Node):
             # Sending actual offboard command
             if self.offboard_setpoint_counter == 25:
                 self.engage_offboard_mode()
-                self.get_logger().info("Offboard mode requested")
+                #self.get_logger().info("Offboard mode requested")
                 
             # Arm after 5 seconds
             # Sending arm command -> Will arm and take off
             elif self.offboard_setpoint_counter == 50:
                 self.arm()
-                self.get_logger().info("Arm command sent")
+                #self.get_logger().info("Arm command sent")
     
         
         ## ---------------------------------------------------
@@ -536,7 +537,7 @@ class Drone_Three(Node):
                     self.land()
                     self.is_landing_triggered = True
                     if self.vehicle_local_position.z > -0.5:  # Within 0.5m of ground (NED frame)
-                        self.get_logger().info("Landed successfully")
+                        #self.get_logger().info("Landed successfully")
                         self.is_disarmed = True
                         self.disarm()
 
