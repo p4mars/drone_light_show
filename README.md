@@ -68,7 +68,13 @@ colcon build --packages-select <NAME_OF_PACKAGE>
 4. Source your directory to access the newly built (or rebuilt) package by typing:
 ```
 cd ..
-source ros2_ws/install/setup.bash
+source ~/ros2_ws/install/setup.bash
+```
+
+5. Install one library manually:
+```
+cd ros2_ws
+pip install pyproj
 ```
 
 This builds all the folders under /src using the sourced toolchain. To run the example to ensure your set up was done correctly please refer to the [official PX4 documentation](https://docs.px4.io/main/en/ros2/user_guide.html#running-the-example). 

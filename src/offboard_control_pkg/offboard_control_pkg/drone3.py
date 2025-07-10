@@ -75,6 +75,8 @@ class Drone_Three(Node):
         #----------------------------------------
         self.offboard_setpoint_counter = 0 # To count time passed
         self.takeoff_height = -2.0 # positive downward!
+        self.infrontx = 2.0  # x offset in front of the flame
+        self.infronty = 2.0  # y offset in front of the flame
         self.theta = 0.0
         self.position_change = 0
         self.all_close_counter = 0
