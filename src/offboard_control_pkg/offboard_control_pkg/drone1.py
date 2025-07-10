@@ -13,7 +13,6 @@ class Drone_One(Node):
     def __init__(self) -> None:
         super().__init__('Drone_One_Node')
 
-
         self.leader = "" #px4_2, px4_3
         self.follower_number = None
         self.colour = ""
@@ -26,21 +25,6 @@ class Drone_One(Node):
             history=HistoryPolicy.KEEP_LAST,
             depth=10
         )
-
-        # Needed for frame transformation 
-        #if self.leader == "":
-        #    pass
-        #else:
-        #    self.leader_gps = self.create_subscription(
-        #    VehicleGlobalPosition, f'{self.leader}/fmu/out/vehicle_global_position',
-        #    self.global_position_callback, qos_profile)
-#
-        #    self.leader_vehicle_local_position_subscriber = self.create_subscription(
-        #    VehicleLocalPosition, f'{self.leader}/fmu/out/vehicle_local_position',
-        #    self.vehicle_local_position_callback, qos_profile)
-#
-        #    self.leader_vehicle_local_position = VehicleLocalPosition()
-        
 
         #---------------------------------------
         # Publishers
@@ -83,7 +67,6 @@ class Drone_One(Node):
         self.colour = self.custom_msg.light_colour
         self.follower_number = self.custom_msg.follower_number
         self.drone_name = self.custom_msg.drone_name
-
 
         self.vehicle_status = VehicleStatus()
         self.vehicle_local_position = VehicleLocalPosition()
@@ -208,8 +191,9 @@ class Drone_One(Node):
         flame_path = flame_path / np.max(flame_path)  # Scale down to fit in the local frame by scaling everything to 0-1 range
         flame_path = flame_path * 8.0  # Scale the maximum dimension of the flame to 10m for the trajectory
         #flame_path = flame_path.tolist()
-
+ 
         self.flame_path = flame_path  # Store the flame path for later use
+        print(flame_path[0][0], flame_path[0][1]) 
         
     def publish_vehicle_command(self, target, command, **params) -> None:
         msg = VehicleCommand()
@@ -402,12 +386,12 @@ class Drone_One(Node):
         path_to_flame = [[0.0,1.0, self.takeoff_height]]
 
         section_1_length = 3.5
-        section_1_x_points = np.linspace(0.0, section_1_length, 7) ## first path section with 0.5m increments
+        section_1_x_points = np.linspace(0.0, section_1_length, 50) ## first path section with 0.5m increments
         for x in section_1_x_points:
             path_to_flame.append([x, 1.0, self.takeoff_height])
         
         section_2_length = 9.0
-        section_2_y_points = np.linspace(1.0, section_2_length, 21) ## second path section with 0.5m increments
+        section_2_y_points = np.linspace(1.0, section_2_length, 50) ## second path section with 0.5m increments
         for y in section_2_y_points:
             path_to_flame.append([section_1_length, y, self.takeoff_height])
 
