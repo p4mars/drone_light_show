@@ -8,6 +8,15 @@ from tf2_ros import StaticTransformBroadcaster
 from pyproj import Transformer
 from builtin_interfaces.msg import Time
 
+import rclpy
+from rclpy.node import Node
+from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy, HistoryPolicy
+from geometry_msgs.msg import TransformStamped
+from px4_msgs.msg import VehicleLocalPosition
+from tf2_ros import StaticTransformBroadcaster
+from pyproj import Transformer
+from builtin_interfaces.msg import Time
+
 class TF_Tree(Node):
     def __init__(self):
         super().__init__('tf_tree_node')
@@ -19,32 +28,25 @@ class TF_Tree(Node):
             depth=10
         )
 
-        self.sent_transforms = {
-            'drone1': False,
-            'drone2': False,
-            'drone3': False
-        }
-
         self.map_lat = 47.397971057728974
         self.map_lon = 8.546163739800146
         self.map_alt = 0.0
 
-        self.broadcaster = StaticTransformBroadcaster(self)
         self.sent_transforms = {'drone1': False, 'drone2': False, 'drone3': False}
-
-        self.drone1_sub = self.create_subscription(
-            VehicleLocalPosition, 'px4_1/fmu/out/vehicle_local_position',
-            self.drone1_callback, qos_profile)
-
-        self.drone2_sub = self.create_subscription(
-            VehicleLocalPosition, 'px4_2/fmu/out/vehicle_local_position',
-            self.drone2_callback, qos_profile)
-
-        self.drone3_sub = self.create_subscription(
-            VehicleLocalPosition, 'px4_3/fmu/out/vehicle_local_position',
-            self.drone3_callback, qos_profile)
-        
         self.static_transforms = []
+        self.broadcaster = StaticTransformBroadcaster(self)
+
+        self.create_subscription(VehicleLocalPosition,
+                                 'px4_1/fmu/out/vehicle_local_position',
+                                 self.drone1_callback, qos_profile)
+
+        self.create_subscription(VehicleLocalPosition,
+                                 'px4_2/fmu/out/vehicle_local_position',
+                                 self.drone2_callback, qos_profile)
+
+        self.create_subscription(VehicleLocalPosition,
+                                 'px4_3/fmu/out/vehicle_local_position',
+                                 self.drone3_callback, qos_profile)
 
     def gps_to_enu(self, lat, lon, alt):
         transformer = Transformer.from_crs(
@@ -70,8 +72,12 @@ class TF_Tree(Node):
         self.get_logger().info(f'[TF] Staged: map → {drone_name}_origin @ ENU offset: {offset}')
 
     def publish_all_static_tfs(self):
-        self.get_logger().info("[TF] Broadcasting all static transforms...")
+        self.get_logger().info("[TF] Publishing all static transforms to /tf_static...")
         self.broadcaster.sendTransform(self.static_transforms)
+
+    def check_if_ready(self):
+        if all(self.sent_transforms.values()):
+            self.publish_all_static_tfs()
 
     def drone1_callback(self, msg):
         if not self.sent_transforms['drone1']:
@@ -97,9 +103,6 @@ class TF_Tree(Node):
             self.sent_transforms['drone3'] = True
             self.check_if_ready()
 
-    def check_if_ready(self):
-        if all(self.sent_transforms.values()):
-            self.publish_all_static_tfs()
 
 def main(args=None) -> None:
     try:
