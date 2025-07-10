@@ -346,11 +346,13 @@ class Drone_One(Node):
         path_to_flame = [[0.0, 1.0, self.takeoff_height]]
 
         section_1_length = self.flame_path[0][0] - self.infrontx # Length of the first section of the path to the flame
+        print(section_1_length)
         section_1_x_points = np.linspace(0.0, section_1_length, 7) ## first path section with 0.5m increments
         for x in section_1_x_points:
             path_to_flame.append([x, 1.0, self.takeoff_height])
         
         section_2_length = self.flame_path[0][1] - self.infronty
+        print(section_2_length)
         section_2_y_points = np.linspace(1.0, section_2_length, 21) ## second path section with 0.5m increments
         for y in section_2_y_points:
             path_to_flame.append([section_1_length, y, self.takeoff_height])
